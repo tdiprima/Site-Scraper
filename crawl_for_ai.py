@@ -1,3 +1,6 @@
+"""
+Keep browser visible and increase timeout because it wasn't working on MacOS.
+"""
 import asyncio
 from crawl4ai import AsyncWebCrawler
 
