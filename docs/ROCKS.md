@@ -8,7 +8,7 @@ Uploading the markdown output from that Crawl4AI script to your RAG (Retrieval-A
    - Instead of manually copy-pasting or Googling every time you need info, you've got a *curated dataset* ready to roll. It's like having the site's brain downloaded for your personal use. Big deal? Heck yeah, it's like having a cheat code for info!
 
 2. **RAG Makes It Next-Level**:
-   - Your RAG system (think of it as a super-smart librarian with a chatbot vibe) takes those markdown files, indexes them, and lets you *query* the content like a boss. Want to know "Who's the lead researcher in bioinformatics at Stony Brook?" or "What's the latest BMI project on AI?"—boom, RAG searches the crawled data and gives you precise answers, pulling straight from the text.
+   - Your RAG system (think of it as a super-smart librarian with a chatbot vibe) takes those markdown files, indexes them, and lets you *query* the content like a boss. Want to know "Who's the lead researcher in biomedical informatics at Stony Brook?" or "What's the latest BMI project on AI?"—boom, RAG searches the crawled data and gives you precise answers, pulling straight from the text.
    - Unlike a basic search engine that just yeets you links, RAG *understands* the content and can summarize, connect dots, or even answer in natural language. It's like having a convo with the website itself, but faster and smarter.
 
 3. **Time-Saver Vibes**:
@@ -32,7 +32,7 @@ Imagine you're chilling and need answers from the BMI site. With your RAG loaded
 ### Real-World Hype
 Let's make it concrete:
 
-- **Student Vibes**: You're taking a bioinformatics class and need to know what Stony Brook's BMI dept offers. Query your RAG: "What grad programs does BMI have?" It pulls program descriptions, prereqs, and deadlines from the crawled pages. No digging through menus on the site.
+- **Student Vibes**: You're taking a biomedical informatics class and need to know what Stony Brook's BMI dept offers. Query your RAG: "What grad programs does BMI have?" It pulls program descriptions, prereqs, and deadlines from the crawled pages. No digging through menus on the site.
 - **Researcher Glow-Up**: You're writing a paper and need BMI's latest work. Ask RAG: "Summarize BMI's AI research." It scans the markdown, finds relevant pages, and gives you a tight summary with key points. You just saved hours.
 - **Curious Geek**: You're just nerding out and want to know "What's the vibe of BMI's faculty?" RAG reads the bios and gives you a rundown of their expertise, maybe even spotting trends like "Lots of ML and imaging focus."
 
