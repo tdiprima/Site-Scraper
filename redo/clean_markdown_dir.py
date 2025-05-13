@@ -33,5 +33,6 @@ def clean_all_markdown_files(directory_path):
 
         print(f"✅ Cleaned: {md_file.name} → {cleaned_filename}")
 
+
 # Example usage:
 # clean_all_markdown_files("/path/to/your/markdown/folder")
