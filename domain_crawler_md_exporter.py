@@ -5,11 +5,12 @@ python domain_crawler_md_exporter.py \
   --allowed-domain stonybrookmedicine.edu \
   --output-dir output_markdown
 """
-import os
 import argparse
+import os
+from urllib.parse import urljoin, urlparse
+
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
 from markdownify import markdownify as md
 
 
@@ -60,9 +61,7 @@ def crawl(start_url, allowed_domain, output_dir, max_pages=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Crawl a domain, convert HTML pages to markdown, and save to files."
-    )
+    parser = argparse.ArgumentParser(description="Crawl a domain, convert HTML pages to markdown, and save to files.")
     parser.add_argument("--start-url", required=True, help="Starting URL")
     parser.add_argument("--allowed-domain", required=True, help="Domain to allow (e.g., stonybrookmedicine.edu)")
     parser.add_argument("--output-dir", default="output_markdown", help="Directory to save markdown files")

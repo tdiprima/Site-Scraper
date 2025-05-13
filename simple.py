@@ -3,14 +3,13 @@ Example usage of crawl4ai
 https://github.com/unclecode/crawl4ai?tab=readme-ov-file#-quick-start
 """
 import asyncio
+
 from crawl4ai import *
 
 
 async def main():
     async with AsyncWebCrawler() as crawler:
-        result = await crawler.arun(
-            url="https://www.nbcnews.com/business",
-        )
+        result = await crawler.arun(url="https://www.nbcnews.com/business", )
         print(result.markdown)
 
 

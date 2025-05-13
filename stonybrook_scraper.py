@@ -4,9 +4,10 @@ Crawl all pages under *.stonybrookmedicine.edu starting from the BMI home,
 convert each to markdown, and save as separate .md files.
 """
 import os
+from urllib.parse import urljoin, urlparse
+
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlparse
 from markdownify import markdownify as md
 
 # 1. Config
