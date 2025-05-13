@@ -1,3 +1,6 @@
+bmi_stonybrook_markdown/
+output_markdown/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
