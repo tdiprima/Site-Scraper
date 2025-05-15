@@ -1,4 +1,4 @@
-# SiteScraper
+# Site Scraper
 
 <!-- Disco Theme (Animated) -->
 <a href="https://github.com/unclecode/crawl4ai">
