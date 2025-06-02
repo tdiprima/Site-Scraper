@@ -9,7 +9,7 @@
 
 * **Domain-wide Markdown Conversion**
 
-  * Scripts like `stonybrook_scraper.py` and `domain_crawler_md_exporter.py` crawl every accessible page under `stonybrookmedicine.edu`, convert them to Markdown using `markdownify`, and save each as a `.md` file. Headers are added for traceability.
+  * Scripts like `stonybrook_scraper.py` ⭐️ and `domain_crawler_md_exporter.py` crawl every accessible page under `stonybrookmedicine.edu`, convert them to Markdown using `markdownify`, and save each as a `.md` file. Headers are added for traceability.
 
 * **Async + Headless Crawling**
 
