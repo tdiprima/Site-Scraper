@@ -28,3 +28,26 @@ You get a nice, repeatable pipeline with clean separation at each stage. **No ma
 * This script doesn't care where you are, as long as all scripts are together.
 * It will **nuke old output/cleaned directories** each time for a clean run.
 * If you want to preserve your raw/cleaned files, just comment out or adjust the `shutil.rmtree` lines.
+
+---
+
+Here's a Python script using Crawl4AI to crawl the Stony Brook University website, extracting main content while respecting the specified requirements: `stonybrook_scraper.py`
+
+This script:
+
+1. Uses Crawl4AI to crawl starting from https://www.stonybrook.edu/
+2. Respects robots.txt when available
+3. Ignores specified file extensions
+4. Removes headers, footers, and navigation elements
+5. Extracts main content using BeautifulSoup
+6. Saves content to markdown files in a "stonybrook_content" directory
+7. Limits crawling depth to avoid excessive scraping
+8. Creates clean markdown files without URLs in the content
+
+Make sure to install required packages:
+
+```bash
+pip install crawl4ai beautifulsoup4
+```
+
+The script will create a directory called "stonybrook_content" with markdown files containing the cleaned main content from each page. Each file is named based on the URL's last segment and contains the page's main textual content without headers, footers, or navigation elements.

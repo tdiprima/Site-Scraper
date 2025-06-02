@@ -3,6 +3,7 @@ visited.txt
 bmi_stonybrook_markdown/
 output_markdown/
 cleaned_markdown/
+stonybrook_content/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

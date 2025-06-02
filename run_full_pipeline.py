@@ -5,7 +5,7 @@ import shutil
 import re
 
 # === Step 1: Run the scraper ===
-SCRAPER_SCRIPT = "stonybrook_scraper.py"
+SCRAPER_SCRIPT = "bmi_scraper.py"
 RAW_DIR = "output_markdown"
 CLEANED_DIR = "cleaned_markdown"
 
