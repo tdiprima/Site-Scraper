@@ -1,27 +1,42 @@
-#!/usr/bin/env python3
 """
-Crawl all pages under *.stonybrookmedicine.edu starting from the BMI home,
-convert each to markdown (excluding headers/footers), and save as separate .md files.
-Supports resume on Ctrl+C using visited.txt and queue.txt.
+Crawl all pages under https://bmi.stonybrookmedicine.edu/*, convert each to markdown,
+excluding headers/footers, and save as separate .md files.
+Respects robots.txt and skips PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX files.
 """
-
 import os
 import sys
 from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
+import urllib.robotparser
 
 # Config
 START_URL = "https://bmi.stonybrookmedicine.edu"
-ALLOWED_DOMAIN = "stonybrookmedicine.edu"
+ALLOWED_DOMAIN = "bmi.stonybrookmedicine.edu"
+ALLOWED_URL_PREFIX = "https://bmi.stonybrookmedicine.edu/"
 OUTPUT_DIR = "output_markdown"
 VISITED_FILE = "visited.txt"
 QUEUE_FILE = "queue.txt"
 REQUEST_TIMEOUT = 10  # seconds
 
+# File extensions to skip
+SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx"]
+
 # Setup
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Setup robots.txt parser
+ROBOTS_URL = f"{ALLOWED_URL_PREFIX}robots.txt"
+USER_AGENT = "*"
+rp = urllib.robotparser.RobotFileParser()
+rp.set_url(ROBOTS_URL)
+try:
+    rp.read()
+    print("✅ robots.txt loaded.")
+except Exception as e:
+    print(f"⚠️  Could not read robots.txt: {e}")
+    rp = None  # Fail open: allow everything
 
 # Load or initialize visited set
 if os.path.exists(VISITED_FILE):
@@ -44,6 +59,12 @@ try:
         url = queue.pop(0)
         if url in visited:
             continue
+
+        # robots.txt check before crawling
+        if rp is not None and not rp.can_fetch(USER_AGENT, url):
+            print(f"🚫 Blocked by robots.txt: {url}")
+            continue
+
         print(f"🔍 Crawling: {url}")
         visited.add(url)
 
@@ -61,21 +82,24 @@ try:
         html = resp.text
         soup = BeautifulSoup(html, "html.parser")
 
-        # Enqueue internal links, restricted to bmi.stonybrookmedicine.edu and skip PDFs and other docs
-        SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx" ".png"]
+        # Enqueue internal links, skip docs, keep to allowed domain and prefix
         for a in soup.find_all("a", href=True):
             href = urljoin(url, a["href"])
             parsed = urlparse(href)
             path = parsed.path.lower()
-            # If any unwanted extension is in the path, skip
+            # Skip unwanted extensions anywhere in path
             if any(ext in path for ext in SKIP_EXTENSIONS):
                 continue
+            # Only allow within allowed domain and prefix
             if (
-                parsed.netloc == "bmi.stonybrookmedicine.edu"
-                and href.startswith("https://bmi.stonybrookmedicine.edu/")
+                parsed.netloc == ALLOWED_DOMAIN
+                and href.startswith(ALLOWED_URL_PREFIX)
                 and href not in visited
                 and href not in queue
             ):
+                # Check robots.txt before queuing (optional, can remove for speed)
+                if rp is not None and not rp.can_fetch(USER_AGENT, href):
+                    continue
                 queue.append(href)
 
         try:
@@ -88,14 +112,13 @@ try:
             # Convert to Markdown
             markdown = md(str(main_content), heading_style="ATX")
 
-            # Save file
+            # Save file (NO heading with path at top)
             parsed_start = urlparse(url)
             path = parsed_start.path.strip("/").replace("/", "_") or "index"
             filename = f"{parsed_start.netloc.replace('.', '_')}_{path}.md"
             filepath = os.path.join(OUTPUT_DIR, filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
-                # f.write(f"<!-- Source: {parsed_start.netloc}{parsed_start.path} -->\n\n")
                 f.write(markdown)
 
             print(f"✅  Saved {url} → {filepath}")
