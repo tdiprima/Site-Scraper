@@ -5,37 +5,26 @@
   <img src="https://raw.githubusercontent.com/unclecode/crawl4ai/main/docs/assets/powered-by-disco.svg" alt="Powered by Crawl4AI" width="200"/>
 </a>
 
-### 🔥 Features
+Here's a single Python script (`run_full_pipeline.py`) that'll:
 
-* **Domain-wide Markdown Conversion**
+1. **Run** the scraper and generate Markdown in an output dir.
+2. **Create a new `cleaned_markdown` dir** and process all `.md` files, stripping links/images and saving cleaned files there.
+3. **Run header/footer cleanup** on all files in the `cleaned_markdown` dir.
 
-  * Scripts like `stonybrook_scraper.py` ⭐️ and `domain_crawler_md_exporter.py` crawl every accessible page under `stonybrookmedicine.edu`, convert them to Markdown using `markdownify`, and save each as a `.md` file. Headers are added for traceability.
+You get a nice, repeatable pipeline with clean separation at each stage. **No manual copying. No moving scripts around. One command.**
 
-* **Async + Headless Crawling**
+## 📋 How to Use
 
-  * `stonybrook_to_markdown.py` and `get_urls.py` leverage `crawl4ai` with Playwright to crawl pages asynchronously using a BFS strategy with configurable depth and max pages.
-  * `crawl_for_ai.py` adds support for non-headless mode on MacOS with extended timeout to handle rendering quirks.
+1. In your terminal, just run:
 
-* **Firecrawl Integration**
+   ```bash
+   python3 run_full_pipeline.py
+   ```
 
-  * `my_firecrawl.py` supports crawling via Firecrawl’s API. Markdown is auto-extracted from all pages. You’ll need to set the `FIRECRAWL_API_KEY` in your environment.
+2. Your **fully cleaned files** will show up in the `cleaned_markdown` directory.
 
-### 🧹 Cleanup & Post-Processing
+## 💡 Notes
 
-* **Markdown Link Simplifier**
-
-  * `clean_markdown_dir.py` strips all Markdown links (`[text](url)`) and images (`![alt](url)`) down to plain text, making the output cleaner for embeddings or AI chunking.
-
-* **Header/Footer Stripping**
-
-  * `header_footer_strip.py` targets repetitive headers like “Skip to main content” and common footers. Just drop it in a directory with your `.md` files and run.
-
-### 🛠 Utilities
-
-* `simple.py` is a minimal working example to test `crawl4ai`.
-* Scripts are modular, so you can plug in your preferred crawler/exporter combo and post-process results with the cleaning tools.
-
-### 🗂 Directory Structure
-
-* All output is organized into subfolders like `output_markdown` or `bmi_stonybrook_markdown`.
-* Cleaned files get a `_cleaned.md` suffix so originals remain intact.
+* This script doesn't care where you are, as long as all scripts are together.
+* It will **nuke old output/cleaned directories** each time for a clean run.
+* If you want to preserve your raw/cleaned files, just comment out or adjust the `shutil.rmtree` lines.

@@ -2,6 +2,7 @@ queue.txt
 visited.txt
 bmi_stonybrook_markdown/
 output_markdown/
+cleaned_markdown/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

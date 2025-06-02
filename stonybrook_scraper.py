@@ -61,11 +61,21 @@ try:
         html = resp.text
         soup = BeautifulSoup(html, "html.parser")
 
-        # Enqueue internal links
+        # Enqueue internal links, restricted to bmi.stonybrookmedicine.edu and skip PDFs and other docs
+        SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx" ".png"]
         for a in soup.find_all("a", href=True):
             href = urljoin(url, a["href"])
             parsed = urlparse(href)
-            if ALLOWED_DOMAIN in parsed.netloc and href not in visited and href not in queue:
+            path = parsed.path.lower()
+            # If any unwanted extension is in the path, skip
+            if any(ext in path for ext in SKIP_EXTENSIONS):
+                continue
+            if (
+                parsed.netloc == "bmi.stonybrookmedicine.edu"
+                and href.startswith("https://bmi.stonybrookmedicine.edu/")
+                and href not in visited
+                and href not in queue
+            ):
                 queue.append(href)
 
         try:
@@ -85,7 +95,7 @@ try:
             filepath = os.path.join(OUTPUT_DIR, filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
-                f.write(f"# {parsed_start.netloc}{parsed_start.path}\n\n")
+                # f.write(f"<!-- Source: {parsed_start.netloc}{parsed_start.path} -->\n\n")
                 f.write(markdown)
 
             print(f"✅  Saved {url} → {filepath}")
