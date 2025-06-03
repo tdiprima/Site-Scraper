@@ -119,6 +119,7 @@ try:
             filepath = os.path.join(OUTPUT_DIR, filename)
 
             with open(filepath, "w", encoding="utf-8") as f:
+                # f.write(f"<!-- Source: {parsed_start.netloc}{parsed_start.path} -->\n\n")
                 f.write(markdown)
 
             print(f"✅  Saved {url} → {filepath}")
