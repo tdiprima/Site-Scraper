@@ -5,11 +5,12 @@ Respects robots.txt and skips PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX files.
 """
 import os
 import sys
+import urllib.robotparser
 from urllib.parse import urljoin, urlparse
+
 import requests
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
-import urllib.robotparser
 
 # Config
 START_URL = "https://bmi.stonybrookmedicine.edu"
@@ -91,12 +92,8 @@ try:
             if any(ext in path for ext in SKIP_EXTENSIONS):
                 continue
             # Only allow within allowed domain and prefix
-            if (
-                parsed.netloc == ALLOWED_DOMAIN
-                and href.startswith(ALLOWED_URL_PREFIX)
-                and href not in visited
-                and href not in queue
-            ):
+            if (parsed.netloc == ALLOWED_DOMAIN and href.startswith(
+                ALLOWED_URL_PREFIX) and href not in visited and href not in queue):
                 # Check robots.txt before queuing (optional, can remove for speed)
                 if rp is not None and not rp.can_fetch(USER_AGENT, href):
                     continue

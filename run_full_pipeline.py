@@ -1,8 +1,8 @@
 import os
+import re
+import shutil
 import subprocess
 from pathlib import Path
-import shutil
-import re
 
 # === Step 1: Run the scraper ===
 SCRAPER_SCRIPT = "bmi_scraper.py"
@@ -20,6 +20,7 @@ if os.path.exists(CLEANED_DIR):
 print(f"\n[1/3] Running the web scraper...")
 subprocess.run(["python3", SCRAPER_SCRIPT], check=True)
 
+
 # === Step 2: Clean markdown files and save to CLEANED_DIR ===
 
 def clean_markdown_links_and_images(text):
@@ -28,6 +29,7 @@ def clean_markdown_links_and_images(text):
     # Remove regular links: [text](url) -> text
     text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
     return text
+
 
 print(f"\n[2/3] Cleaning markdown links and images...")
 
@@ -43,6 +45,7 @@ for md_file in md_files:
     cleaned_path = Path(CLEANED_DIR) / md_file.name
     cleaned_path.write_text(cleaned_text, encoding='utf-8')
     print(f"  Cleaned: {md_file.name} → {cleaned_path.name}")
+
 
 # === Step 3: Strip header/footer from all files in CLEANED_DIR ===
 
@@ -72,6 +75,7 @@ def strip_header_footer(path):
     # overwrite file
     with open(path, 'w', encoding='utf-8') as f:
         f.writelines(new_lines)
+
 
 print(f"\n[3/3] Stripping header/footer from cleaned files...")
 cleaned_md_files = list(Path(CLEANED_DIR).glob("*.md"))

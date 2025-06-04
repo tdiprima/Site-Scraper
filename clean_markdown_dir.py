@@ -21,10 +21,10 @@ def clean_markdown_links_and_images(text):
     """
     # Remove images: ![alt](url) -> alt
     text = re.sub(r'!\[([^\]]*)\]\([^)]+\)', r'\1', text)
-    
+
     # Remove regular links: [text](url) -> text
     text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
-    
+
     return text
 
 
