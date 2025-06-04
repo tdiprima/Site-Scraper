@@ -1,149 +1,182 @@
 """
 stonybrook_scraper.py
 
-Crawls the Stony Brook University website, starting from the homepage.
-- Visits each unique internal HTML page once.
-- Extracts and cleans main content (removes nav, headers, footers).
-- Saves content as Markdown files in an output directory.
-- Skips broken or slow pages without retrying.
-- Saves crawling progress so you can resume later if interrupted.
+Crawl all pages under https://www.stonybrook.edu/*, convert each to markdown,
+excluding headers, footers, and navs, and save as separate .md files in stonybrook_content.
+Respects robots.txt and skips PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, PNG, JPG, JPEG files.
 
-Dependencies: crawl4ai, BeautifulSoup4
+Dependencies: requests, beautifulsoup4, markdownify
 """
-import asyncio
 import os
-import re
+import sys
+import time
+import urllib.robotparser
 from urllib.parse import urljoin, urlparse
 
+import requests
 from bs4 import BeautifulSoup
-from crawl4ai import AsyncWebCrawler
-from crawl4ai.extraction_strategy import LLMExtractionStrategy
+from markdownify import markdownify as md
+
+# Config
+START_URL = "https://www.stonybrook.edu/"
+ALLOWED_DOMAIN = "www.stonybrook.edu"
+ALLOWED_URL_PREFIX = "https://www.stonybrook.edu/"
+OUTPUT_DIR = "stonybrook_content"
+VISITED_FILE = "visited.txt"
+QUEUE_FILE = "queue.txt"
+REQUEST_TIMEOUT = 10  # seconds
+SLEEP_TIME = 1.5
+
+# File extensions to skip
+SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg"]
+
+# Setup
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Setup robots.txt parser
+ROBOTS_URL = f"{ALLOWED_URL_PREFIX}robots.txt"
+USER_AGENT = "*"
+rp = urllib.robotparser.RobotFileParser()
+rp.set_url(ROBOTS_URL)
+try:
+    rp.read()
+    print("✅ robots.txt loaded.")
+except Exception as e:
+    print(f"⚠️  Could not read robots.txt: {e}")
+    rp = None  # Fail open: allow everything
+
+# Load or initialize visited set
+if os.path.exists(VISITED_FILE):
+    with open(VISITED_FILE, "r", encoding="utf-8") as f:
+        visited = set(line.strip() for line in f if line.strip())
+else:
+    visited = set()
+
+# Load or initialize queue
+if os.path.exists(QUEUE_FILE):
+    with open(QUEUE_FILE, "r", encoding="utf-8") as f:
+        queue = [line.strip() for line in f if line.strip()]
+else:
+    queue = [START_URL]
+
+print("🚀 Starting crawl...\n(Press Ctrl+C to stop anytime)\n")
 
 
-async def clean_content(content, url):
-    soup = BeautifulSoup(content, 'html.parser')
+def clean_html(html):
+    soup = BeautifulSoup(html, "html.parser")
 
-    # Remove headers, footers, and navigation
-    for element in soup.find_all(['header', 'footer', 'nav']):
-        element.decompose()
+    # Remove all header, footer, nav tags
+    for tag in soup.find_all(['header', 'footer', 'nav']):
+        tag.decompose()
 
     # Try multiple selectors for main content
+    selectors = [('main', {}), ('div', {'role': 'main'}), ('div', {'class': 'region-content'}), ('article', {}),
+        ('div', {'id': 'content'})]
     main_content = None
-    selectors = ['main', 'div[role="main"]', 'div.region-content', 'article', 'div#content']
-    for selector in selectors:
-        main_content = soup.find(selector)
-        if main_content:
+    for tag, attrs in selectors:
+        found = soup.find(tag, attrs=attrs)
+        if found:
+            main_content = found
             break
 
+    # Fallback to <body> if nothing else
     if not main_content:
-        main_content = soup.find('body')  # Fallback to body if no main content found
+        main_content = soup.find("body")
+    if not main_content:
+        # If literally nothing found, return empty string
+        return ""
 
-    if main_content:
-        # Remove script and style elements
-        for element in main_content.find_all(['script', 'style']):
-            element.decompose()
+    # Remove all script/style in main content
+    for el in main_content.find_all(['script', 'style']):
+        el.decompose()
 
-        # Get text, preserving basic formatting
-        text = main_content.get_text(separator='\n', strip=True)
-        text = re.sub(r'\n\s*\n', '\n\n', text)
-        return text.strip()
-    return ""
+    # Markdownify
+    markdown = md(str(main_content), heading_style="ATX")
+    return markdown.strip()
 
 
-async def crawl_website():
-    async with AsyncWebCrawler() as crawler:
-        # Configure extraction strategy
-        extraction_strategy = LLMExtractionStrategy(
-            instruction="Extract the main textual content from the webpage, ignoring headers, footers, and navigation elements.")
+try:
+    while queue:
+        url = queue.pop(0)
+        if url in visited:
+            continue
 
-        # Set up output directory and tracking files
-        output_dir = "stonybrook_content"
-        visited_file = "visited.txt"
-        queue_file = "queue.txt"
-        os.makedirs(output_dir, exist_ok=True)
+        # robots.txt check before crawling
+        if rp is not None and not rp.can_fetch(USER_AGENT, url):
+            print(f"🚫 Blocked by robots.txt: {url}")
+            continue
 
-        # Load visited URLs
-        visited = set()
-        if os.path.exists(visited_file):
-            with open(visited_file, 'r', encoding='utf-8') as f:
-                visited = set(line.strip() for line in f if line.strip())
+        print(f"🔍 Crawling: {url}")
+        visited.add(url)
 
-        # Load or initialize queue
-        queue = [f"https://www.stonybrook.edu/"]
-        if os.path.exists(queue_file):
-            with open(queue_file, 'r', encoding='utf-8') as f:
-                queue = [line.strip() for line in f if line.strip()]
+        # Save to visited log
+        with open(VISITED_FILE, "a", encoding="utf-8") as f:
+            f.write(url + "\n")
 
-        allowed_extensions = ['.html', '.htm', '']
-        allowed_domain = "www.stonybrook.edu"
+        try:
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+            resp.raise_for_status()
+        except Exception as e:
+            print(f"⚠️  Skipping {url!r}: {e}")
+            continue
 
-        while queue:
-            url = queue.pop(0)
-            if url in visited:
+        html = resp.text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Enqueue internal links, skip docs, keep to allowed domain and prefix
+        for a in soup.find_all("a", href=True):
+            href = urljoin(url, a["href"])
+            parsed = urlparse(href)
+            path = parsed.path.lower()
+            # Skip unwanted extensions anywhere in path
+            if any(ext in path for ext in SKIP_EXTENSIONS):
+                continue
+            # Only allow within allowed domain and prefix
+            if (parsed.netloc == ALLOWED_DOMAIN and href.startswith(
+                    ALLOWED_URL_PREFIX) and href not in visited and href not in queue):
+                # Check robots.txt before queuing (optional, can remove for speed)
+                if rp is not None and not rp.can_fetch(USER_AGENT, href):
+                    continue
+                queue.append(href)
+
+        try:
+            # Clean and extract main content
+            markdown = clean_html(html)
+            if not markdown or len(markdown) < 50:
+                print(f"⚠️  Not enough main content found at {url}, skipping.")
                 continue
 
-            visited.add(url)
+            # Save file
+            parsed_start = urlparse(url)
+            path = parsed_start.path.strip("/").replace("/", "_") or "index"
+            filename = f"{parsed_start.netloc.replace('.', '_')}_{path}.md"
+            filepath = os.path.join(OUTPUT_DIR, filename)
 
-            # Save visited URL
-            with open(visited_file, 'a', encoding='utf-8') as f:
-                f.write(url + "\n")
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(markdown)
 
-            try:
-                # Just try ONCE per page
-                result = await crawler.arun(url=url, extraction_strategy=extraction_strategy, bypass_cache=True,
-                    obey_robots=True)
+            print(f"✅  Saved {url} → {filepath}")
 
-                if result.success:
-                    # Clean and process content
-                    cleaned_content = await clean_content(result.html, url)
+        except Exception as e:
+            print(f"💥 Error processing {url}: {e}")
+            continue
 
-                    if cleaned_content:
-                        # Create safe filename from URL
-                        parsed = urlparse(url)
-                        path = parsed.path.strip("/").replace("/", "_") or "index"
-                        filename = f"{parsed.netloc.replace('.', '_')}_{path}.md"
-                        filepath = os.path.join(output_dir, filename)
+        # Save queue after each page
+        with open(QUEUE_FILE, "w", encoding="utf-8") as f:
+            for item in queue:
+                f.write(item + "\n")
 
-                        # Write to markdown file
-                        with open(filepath, 'w', encoding='utf-8') as f:
-                            f.write(cleaned_content)
+        time.sleep(SLEEP_TIME)
 
-                        print(f"✅ Saved {url} → {filepath}")
+except KeyboardInterrupt:
+    print("\n🛑 Crawl interrupted by user. Saving queue and exiting...\n")
 
-                    # Enqueue internal links
-                    soup = BeautifulSoup(result.html, 'html.parser')
-                    for link in soup.find_all('a', href=True):
-                        href = urljoin(url, link['href'])
-                        parsed_href = urlparse(href)
-                        path = parsed_href.path.lower()
+finally:
+    with open(QUEUE_FILE, "w", encoding="utf-8") as f:
+        for item in queue:
+            f.write(item + "\n")
 
-                        # Skip unwanted extensions
-                        if any(ext in path for ext in
-                               ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg']):
-                            continue
-
-                        # Only queue links within allowed domain
-                        if parsed_href.netloc == allowed_domain and href not in visited and href not in queue:
-                            queue.append(href)
-
-                else:
-                    print(f"⚠️ Extraction failed for {url}. Reason: {getattr(result, 'error', 'Unknown error')}")
-            except Exception as e:
-                print(f"⏩ Skipping {url} due to error: {str(e)}")  # Move on to next URL. No retry.
-
-            # Save queue (every time, in case of crash)
-            with open(queue_file, 'w', encoding='utf-8') as f:
-                for item in queue:
-                    f.write(item + "\n")
-
-            await asyncio.sleep(1.5)  # <- throttle requests
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(crawl_website())
-    except KeyboardInterrupt:
-        print("\n🛑 Crawl interrupted. Queue and visited URLs saved.")
-    except Exception as e:
-        print(f"\n🔥 Fatal error in crawl: {e}")
-    print("👋 Done!")
+    print(f"📁 Queue saved to {QUEUE_FILE}")
+    print(f"📁 Visited URLs saved to {VISITED_FILE}")
+    print("👋 Bye!")
+    sys.exit(0)
