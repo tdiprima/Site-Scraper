@@ -1,10 +1,3 @@
-"""
-Vibin' File Cleaner 🔥
-This script yeets the messy headers and footers from your .md files, keeping the good stuff.
-We did our best; sbu headers and footers are all over the place.
-Just swap "path/to/your/folder" with your actual folder path, and you're golden! 💪
-Edits files in place, so no extra clutter. Run it and watch the magic happen. 😎
-"""
 import os
 import re
 
@@ -28,26 +21,32 @@ def clean_file_content(content):
     return content
 
 
-def process_files_in_folder(folder):
-    # Iterate through all files in the folder
-    for filename in os.listdir(folder):
+def process_files_in_folder(input_folder, output_folder):
+    # Create output folder if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
+    # Iterate through all files in the input folder
+    for filename in os.listdir(input_folder):
         if filename.endswith('.md'):  # Process only markdown files
-            file_path = os.path.join(folder, filename)
+            input_path = os.path.join(input_folder, filename)
+            output_path = os.path.join(output_folder, f"cleaned_{filename}")
 
             # Read the file content
-            with open(file_path, 'r', encoding='utf-8') as file:
+            with open(input_path, 'r', encoding='utf-8') as file:
                 content = file.read()
 
             # Clean the content
             cleaned_content = clean_file_content(content)
 
-            # Overwrite the original file with cleaned content
-            with open(file_path, 'w', encoding='utf-8') as file:
+            # Write the cleaned content to a new file
+            with open(output_path, 'w', encoding='utf-8') as file:
                 file.write(cleaned_content)
 
-            print(f"Processed and updated {filename}")
+            print(f"Processed {filename} -> {output_path}")
 
 
 if __name__ == "__main__":
-    folder = "/home/tdiprima/github/Site-Scraper/stonybrook_content"
-    process_files_in_folder(folder)
+    input_folder = "path/to/your/input/folder"  # Replace with your input folder path
+    output_folder = "path/to/your/output/folder"  # Replace with your output folder path
+    process_files_in_folder(input_folder, output_folder)
