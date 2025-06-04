@@ -7,7 +7,6 @@ Crawls the Stony Brook University website, starting from the homepage.
 - Saves content as Markdown files in an output directory.
 - Skips broken or slow pages without retrying.
 - Saves crawling progress so you can resume later if interrupted.
-- You're set. If Stony Brook's site borks? Not your circus, not your monkeys. 🚀
 
 Dependencies: crawl4ai, BeautifulSoup4
 """
@@ -136,6 +135,8 @@ async def crawl_website():
             with open(queue_file, 'w', encoding='utf-8') as f:
                 for item in queue:
                     f.write(item + "\n")
+
+            await asyncio.sleep(1.5)  # <- throttle requests
 
 
 if __name__ == "__main__":
