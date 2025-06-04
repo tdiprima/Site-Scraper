@@ -20,10 +20,10 @@ PER_ITEM=$(echo "$PAUSE + $PROCESS" | bc)
 TOTAL_SEC=$(echo "$LINES * $PER_ITEM" | bc)
 TOTAL_SEC_INT=$(printf "%.0f" "$TOTAL_SEC")  # round to nearest integer
 
-# Now all integer math!
-HOURS=$((TOTAL_SEC_INT / 3600))
+DAYS=$((TOTAL_SEC_INT / 86400))
+HOURS=$(( (TOTAL_SEC_INT % 86400) / 3600 ))
 MINUTES=$(( (TOTAL_SEC_INT % 3600) / 60 ))
 SECONDS=$((TOTAL_SEC_INT % 60))
 
 echo "🕒 $LINES URLs left in $QUEUE_FILE"
-echo "⏳ Estimated time to finish: ${HOURS}h ${MINUTES}m ${SECONDS}s"
+echo "⏳ Estimated time to finish: ${DAYS}d ${HOURS}h ${MINUTES}m ${SECONDS}s"
