@@ -102,32 +102,30 @@ print("🚀 Starting crawl...\n(Press Ctrl+C to stop anytime)\n")
 
 def clean_html(html):
     soup = BeautifulSoup(html, "html.parser")
-
-    # Remove all header, footer, nav tags
     for tag in soup.find_all(['header', 'footer', 'nav']):
         tag.decompose()
-
-    # Try multiple selectors for main content
-    selectors = [('main', {}), ('div', {'role': 'main'}), ('div', {'class': 'region-content'}), ('article', {}), ('div', {'id': 'content'})]
+    selectors = [
+        ('main', {}),
+        ('div', {'role': 'main'}),
+        ('div', {'class': 'region-content'}),
+        ('article', {}),
+        ('div', {'id': 'content'})
+    ]
     main_content = None
     for tag, attrs in selectors:
         found = soup.find(tag, attrs=attrs)
         if found:
             main_content = found
             break
-
-    # Fallback to <body> if nothing else
     if not main_content:
         main_content = soup.find("body")
     if not main_content:
-        # If literally nothing found, return empty string
         return ""
-
-    # Remove all script/style in main content
     for el in main_content.find_all(['script', 'style']):
         el.decompose()
-
-    # Markdownify
+    # Remove all hyperlinks but keep their text
+    for a in main_content.find_all('a'):
+        a.replace_with(a.get_text())
     markdown = md(str(main_content), heading_style="ATX")
     return markdown.strip()
 
