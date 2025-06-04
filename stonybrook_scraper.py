@@ -98,26 +98,27 @@ def clean_html(html):
 try:
     while queue:
         url = queue.pop(0)
-        if url in visited:
+        url_no_fragment = urlparse(url)._replace(fragment="").geturl()
+        if url_no_fragment in visited:
             continue
 
         # robots.txt check before crawling
-        if rp is not None and not rp.can_fetch(USER_AGENT, url):
-            print(f"🚫 Blocked by robots.txt: {url}")
+        if rp is not None and not rp.can_fetch(USER_AGENT, url_no_fragment):
+            print(f"🚫 Blocked by robots.txt: {url_no_fragment}")
             continue
 
-        print(f"🔍 Crawling: {url}")
-        visited.add(url)
+        print(f"🔍 Crawling: {url_no_fragment}")
+        visited.add(url_no_fragment)
 
         # Save to visited log
         with open(VISITED_FILE, "a", encoding="utf-8") as f:
-            f.write(url + "\n")
+            f.write(url_no_fragment + "\n")
 
         try:
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+            resp = requests.get(url_no_fragment, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
         except Exception as e:
-            print(f"⚠️  Skipping {url!r}: {e}")
+            print(f"⚠️  Skipping {url_no_fragment!r}: {e}")
             continue
 
         html = resp.text
@@ -125,19 +126,21 @@ try:
 
         # Enqueue internal links, skip docs, keep to allowed domain and prefix
         for a in soup.find_all("a", href=True):
-            href = urljoin(url, a["href"])
+            href = urljoin(url_no_fragment, a["href"])
             parsed = urlparse(href)
+            # Remove fragment (anchor)
+            href_no_fragment = parsed._replace(fragment="").geturl()
             path = parsed.path.lower()
             # Skip unwanted extensions anywhere in path
             if any(ext in path for ext in SKIP_EXTENSIONS):
                 continue
             # Only allow within allowed domain and prefix
-            if (parsed.netloc == ALLOWED_DOMAIN and href.startswith(
-                    ALLOWED_URL_PREFIX) and href not in visited and href not in queue):
+            if (parsed.netloc == ALLOWED_DOMAIN and href_no_fragment.startswith(ALLOWED_URL_PREFIX)
+                and href_no_fragment not in visited and href_no_fragment not in queue):
                 # Check robots.txt before queuing (optional, can remove for speed)
-                if rp is not None and not rp.can_fetch(USER_AGENT, href):
+                if rp is not None and not rp.can_fetch(USER_AGENT, href_no_fragment):
                     continue
-                queue.append(href)
+                queue.append(href_no_fragment)
 
         try:
             # Clean and extract main content
