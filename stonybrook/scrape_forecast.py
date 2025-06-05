@@ -1,5 +1,20 @@
 """
 Estimates the number of pages on stonybrook.edu before full scraping
+
+# Basic usage (will take ~2-5 minutes)
+python scrape_forecast.py
+
+# Quick mode (headers only, ~30-60 seconds)
+python scrape_forecast.py --quick
+
+# Faster sampling with more workers
+python scrape_forecast.py --workers 10 --sample 50
+
+# Full analysis with larger sample
+python scrape_forecast.py --sample 200 --depth 4
+
+# Analyze a different site
+python scrape_forecast.py --url https://cs.stonybrook.edu
 """
 import argparse
 import concurrent.futures
