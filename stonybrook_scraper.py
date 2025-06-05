@@ -12,6 +12,9 @@ import sys
 import time
 import urllib.robotparser
 from urllib.parse import urljoin, urlparse
+import threading
+from queue import Queue, Empty
+import signal
 
 import requests
 from bs4 import BeautifulSoup
@@ -28,12 +31,26 @@ SITEMAP_URL = "https://www.stonybrook.edu/sitemap.xml"
 REQUEST_TIMEOUT = 10  # seconds
 SLEEP_TIME = 1.5
 
+# Multi-threading config
+NUM_THREADS = 20  # Number of concurrent threads
+MAX_PAGES = 10000  # Reasonable limit for a university website (adjust as needed)
+
 # File extensions to skip
 SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg"]
 SKIP_PATTERNS = ["calendar", "event", "search", "print", "/pdf/", "export", "feed", "rss"]
 
 # Setup
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Global variables for thread coordination
+visited = set()
+visited_lock = threading.Lock()
+queue_lock = threading.Lock()
+file_lock = threading.Lock()
+url_queue = Queue()
+stop_crawl = threading.Event()
+pages_crawled = 0
+pages_crawled_lock = threading.Lock()
 
 # Setup robots.txt parser
 ROBOTS_URL = f"{ALLOWED_URL_PREFIX}robots.txt"
@@ -61,6 +78,8 @@ else:
 
 
 def get_urls_from_sitemap(sitemap_url):
+    """
+    # Commented out because we're not adding sitemap anymore
     try:
         resp = requests.get(sitemap_url, timeout=15)
         resp.raise_for_status()
@@ -71,6 +90,8 @@ def get_urls_from_sitemap(sitemap_url):
     except Exception as e:
         print(f"⚠️  Could not load sitemap: {e}")
         return []
+    """
+    return []
 
 
 def looks_like_trap(url):
@@ -83,27 +104,14 @@ def looks_like_trap(url):
     return False
 
 
-# Load or initialize queue
-queue = set()
-queue.add(START_URL)
-if os.path.exists(QUEUE_FILE):
-    with open(QUEUE_FILE, "r", encoding="utf-8") as f:
-        queue.update(line.strip() for line in f if line.strip())
-
-sitemap_urls = get_urls_from_sitemap(SITEMAP_URL)
-queue.update(sitemap_urls)
-
-# Remove any skipped extensions and traps
-queue = [url for url in queue if not any(ext in url.lower() for ext in SKIP_EXTENSIONS)]
-queue = [url for url in queue if not looks_like_trap(url)]
-
-print("🚀 Starting crawl...\n(Press Ctrl+C to stop anytime)\n")
-
-
 def clean_html(html):
     soup = BeautifulSoup(html, "html.parser")
+    
+    # Remove headers, footers, navs
     for tag in soup.find_all(['header', 'footer', 'nav']):
         tag.decompose()
+    
+    # Find main content
     selectors = [
         ('main', {}),
         ('div', {'role': 'main'}),
@@ -117,102 +125,222 @@ def clean_html(html):
         if found:
             main_content = found
             break
+    
     if not main_content:
         main_content = soup.find("body")
+    
     if not main_content:
         return ""
+    
+    # Remove scripts and styles
     for el in main_content.find_all(['script', 'style']):
         el.decompose()
+    
     # Remove all hyperlinks but keep their text
+    # This is more thorough - it extracts text and removes the entire <a> tag
     for a in main_content.find_all('a'):
-        a.replace_with(a.get_text())
-    markdown = md(str(main_content), heading_style="ATX")
+        # Get the text content
+        text = a.get_text()
+        # Replace the entire <a> tag with just its text
+        a.replace_with(text)
+    
+    # Also remove any href attributes that might remain on other elements
+    for tag in main_content.find_all(True):
+        if 'href' in tag.attrs:
+            del tag.attrs['href']
+    
+    # Convert to markdown with ATX-style headers
+    markdown = md(str(main_content), heading_style="ATX", strip=['a'])
+    
+    # Additional cleanup to ensure no markdown links remain
+    # Remove any [text](url) patterns that might have been created
+    import re
+    markdown = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', markdown)
+    
     return markdown.strip()
 
 
-try:
-    while queue:
-        url = queue.pop(0)
-        url_no_fragment = urlparse(url)._replace(fragment="").geturl()
-        if url_no_fragment in visited:
+def worker_thread(thread_id):
+    """Worker thread function that processes URLs from the queue"""
+    global pages_crawled
+    
+    while not stop_crawl.is_set():
+        try:
+            # Get URL from queue with timeout
+            url = url_queue.get(timeout=5)
+        except Empty:
+            # No more URLs in queue, check if we should continue
+            if url_queue.empty():
+                time.sleep(2)  # Wait a bit for new URLs
+                if url_queue.empty():  # Still empty, we're done
+                    break
             continue
-
+        
+        url_no_fragment = urlparse(url)._replace(fragment="").geturl()
+        
+        # Check if already visited
+        with visited_lock:
+            if url_no_fragment in visited:
+                url_queue.task_done()
+                continue
+            visited.add(url_no_fragment)
+        
+        # Check page limit
+        with pages_crawled_lock:
+            if pages_crawled >= MAX_PAGES:
+                print(f"🛑 Reached maximum page limit ({MAX_PAGES}). Stopping crawl.")
+                stop_crawl.set()
+                url_queue.task_done()
+                break
+            pages_crawled += 1
+            current_count = pages_crawled
+        
         # robots.txt check before crawling
         if rp is not None and not rp.can_fetch(USER_AGENT, url_no_fragment):
-            print(f"🚫 Blocked by robots.txt: {url_no_fragment}")
+            print(f"[Thread {thread_id}] 🚫 Blocked by robots.txt: {url_no_fragment}")
+            url_queue.task_done()
             continue
-        print(f"🔍 Crawling: {url_no_fragment}")
-        visited.add(url_no_fragment)
-
+        
+        print(f"[Thread {thread_id}] 🔍 Crawling ({current_count}/{MAX_PAGES}): {url_no_fragment}")
+        
         # Save to visited log
-        with open(VISITED_FILE, "a", encoding="utf-8") as f:
-            f.write(url_no_fragment + "\n")
-
+        with file_lock:
+            with open(VISITED_FILE, "a", encoding="utf-8") as f:
+                f.write(url_no_fragment + "\n")
+        
         try:
             resp = requests.get(url_no_fragment, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
         except Exception as e:
-            print(f"⚠️  Skipping {url_no_fragment!r}: {e}")
+            print(f"[Thread {thread_id}] ⚠️  Skipping {url_no_fragment!r}: {e}")
+            url_queue.task_done()
             continue
+        
         html = resp.text
         soup = BeautifulSoup(html, "html.parser")
-
+        
         # Enqueue internal links, skip docs, keep to allowed domain and prefix
+        new_urls = []
         for a in soup.find_all("a", href=True):
             href = urljoin(url_no_fragment, a["href"])
             parsed = urlparse(href)
-
+            
             # Remove fragment (anchor)
             href_no_fragment = parsed._replace(fragment="").geturl()
             path = parsed.path.lower()
-
+            
             # Skip unwanted extensions anywhere in path
             if any(ext in path for ext in SKIP_EXTENSIONS):
                 continue
             if looks_like_trap(href_no_fragment):
                 continue
-            if (parsed.netloc == ALLOWED_DOMAIN and href_no_fragment.startswith(
-                    ALLOWED_URL_PREFIX) and href_no_fragment not in visited and href_no_fragment not in queue):
-                if rp is not None and not rp.can_fetch(USER_AGENT, href_no_fragment):
-                    continue
-                queue.append(href_no_fragment)
+            
+            if (parsed.netloc == ALLOWED_DOMAIN and 
+                href_no_fragment.startswith(ALLOWED_URL_PREFIX)):
+                
+                # Check if URL is new
+                with visited_lock:
+                    if href_no_fragment not in visited:
+                        if rp is None or rp.can_fetch(USER_AGENT, href_no_fragment):
+                            new_urls.append(href_no_fragment)
+        
+        # Add new URLs to queue
+        for new_url in new_urls:
+            url_queue.put(new_url)
+        
         try:
             # Clean and extract main content
             markdown = clean_html(html)
             if not markdown or len(markdown) < 50:
-                print(f"⚠️  Not enough main content found at {url}, skipping.")
+                print(f"[Thread {thread_id}] ⚠️  Not enough main content found at {url}, skipping.")
+                url_queue.task_done()
                 continue
-
+            
             # Save file
             parsed_start = urlparse(url)
             path = parsed_start.path.strip("/").replace("/", "_") or "index"
             filename = f"{parsed_start.netloc.replace('.', '_')}_{path}.md"
             filepath = os.path.join(OUTPUT_DIR, filename)
-
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(markdown)
-
-            print(f"✅  Saved {url} → {filepath}")
+            
+            with file_lock:
+                with open(filepath, "w", encoding="utf-8") as f:
+                    f.write(markdown)
+            
+            print(f"[Thread {thread_id}] ✅  Saved {url} → {filepath}")
         except Exception as e:
-            print(f"💥 Error processing {url}: {e}")
-            continue
+            print(f"[Thread {thread_id}] 💥 Error processing {url}: {e}")
+        
+        url_queue.task_done()
+        time.sleep(SLEEP_TIME / NUM_THREADS)  # Distribute sleep across threads
 
-        # Save queue after each page
-        with open(QUEUE_FILE, "w", encoding="utf-8") as f:
-            for item in queue:
-                f.write(item + "\n")
 
-        time.sleep(SLEEP_TIME)
+def signal_handler(sig, frame):
+    """Handle Ctrl+C gracefully"""
+    print("\n🛑 Crawl interrupted by user. Shutting down threads...\n")
+    stop_crawl.set()
 
+
+# Load or initialize queue
+initial_urls = [START_URL]
+if os.path.exists(QUEUE_FILE):
+    with open(QUEUE_FILE, "r", encoding="utf-8") as f:
+        file_urls = [line.strip() for line in f if line.strip()]
+        initial_urls.extend(file_urls)
+
+# Commented out sitemap loading
+# sitemap_urls = get_urls_from_sitemap(SITEMAP_URL)
+# initial_urls.extend(sitemap_urls)
+
+# Remove any skipped extensions and traps
+initial_urls = [url for url in initial_urls if not any(ext in url.lower() for ext in SKIP_EXTENSIONS)]
+initial_urls = [url for url in initial_urls if not looks_like_trap(url)]
+
+# Add initial URLs to queue
+for url in initial_urls:
+    url_queue.put(url)
+
+print(f"🚀 Starting crawl with {NUM_THREADS} threads...")
+print(f"📊 Maximum pages to crawl: {MAX_PAGES}")
+print(f"📁 Initial queue size: {url_queue.qsize()}")
+print("(Press Ctrl+C to stop anytime)\n")
+
+# Set up signal handler for graceful shutdown
+signal.signal(signal.SIGINT, signal_handler)
+
+# Create and start worker threads
+threads = []
+for i in range(NUM_THREADS):
+    t = threading.Thread(target=worker_thread, args=(i+1,))
+    t.daemon = True
+    t.start()
+    threads.append(t)
+
+try:
+    # Wait for all threads to complete or stop signal
+    for t in threads:
+        t.join()
+    
+    # Wait for queue to be empty
+    url_queue.join()
+    
 except KeyboardInterrupt:
-    print("\n🛑 Crawl interrupted by user. Saving queue and exiting...\n")
+    print("\n🛑 Crawl interrupted by user. Shutting down...\n")
+    stop_crawl.set()
 
 finally:
+    # Save remaining queue items
+    remaining_urls = []
+    while not url_queue.empty():
+        try:
+            remaining_urls.append(url_queue.get_nowait())
+        except Empty:
+            break
+    
     with open(QUEUE_FILE, "w", encoding="utf-8") as f:
-        for item in queue:
+        for item in remaining_urls:
             f.write(item + "\n")
-
-    print(f"📁 Queue saved to {QUEUE_FILE}")
+    
+    print(f"\n📊 Total pages crawled: {pages_crawled}")
+    print(f"📁 Queue saved to {QUEUE_FILE} ({len(remaining_urls)} URLs remaining)")
     print(f"📁 Visited URLs saved to {VISITED_FILE}")
     print("👋 Bye!")
-    sys.exit(0)
