@@ -32,6 +32,9 @@ SITEMAP_URL = "https://www.stonybrook.edu/sitemap.xml"
 REQUEST_TIMEOUT = 5  # Faster timeout
 SLEEP_TIME = 3  # More chill pacing
 MAX_DEPTH = 5  # Reasonable depth limit
+# When resuming, assume all queued URLs are at depth 3
+# This allows them to spawn children but only to depth 5
+DEFAULT_RESUME_DEPTH = 3
 
 # Multi-threading config
 NUM_THREADS = 10  # Number of concurrent threads
@@ -468,16 +471,23 @@ else:
 initial_urls = []
 queue_loaded = False
 
-# First check if there's a saved queue file
+# First check if there's a saved queue file.
+# Queue loading section:
 if os.path.exists(QUEUE_FILE):
     with open(QUEUE_FILE, "r", encoding="utf-8") as f:
         file_urls = [line.strip() for line in f if line.strip()]
         if file_urls:
             # Filter out already visited URLs
             file_urls = [url for url in file_urls if url not in visited]
-            initial_urls.extend(file_urls)
+
+            # Add URLs to initial_urls AND set their depths
+            for url in file_urls:
+                initial_urls.append(url)
+                depth_map[url] = DEFAULT_RESUME_DEPTH
+
             queue_loaded = True
             print(f"📂 Resuming from saved queue: {len(file_urls)} URLs to process")
+            print(f"📊 Setting all queued URLs to depth {DEFAULT_RESUME_DEPTH}")
 
 # Only add START_URL if we didn't load a queue
 if not queue_loaded:
