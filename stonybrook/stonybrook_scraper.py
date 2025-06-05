@@ -29,11 +29,11 @@ OUTPUT_DIR = "stonybrook_content"
 VISITED_FILE = "visited.txt"
 QUEUE_FILE = "queue.txt"
 SITEMAP_URL = "https://www.stonybrook.edu/sitemap.xml"
-REQUEST_TIMEOUT = 10  # seconds
-SLEEP_TIME = 1.5
+REQUEST_TIMEOUT = 5  # Faster timeout
+SLEEP_TIME = 3  # More chill pacing
 
 # Multi-threading config
-NUM_THREADS = 20  # Number of concurrent threads
+NUM_THREADS = 10  # Number of concurrent threads
 MAX_PAGES = 20000  # Reasonable limit for a university website
 QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 
@@ -347,6 +347,7 @@ def worker_thread(thread_id):
         
         try:
             resp = requests.get(url_no_fragment, timeout=REQUEST_TIMEOUT)
+            print(f"[Thread {thread_id}] Attempting to fetch: {url_no_fragment}")
             resp.raise_for_status()
         except Exception as e:
             print(f"[Thread {thread_id}] ⚠️  Skipping {url_no_fragment!r}: {e}")
