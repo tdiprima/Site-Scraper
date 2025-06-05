@@ -33,7 +33,7 @@ SLEEP_TIME = 1.5
 
 # Multi-threading config
 NUM_THREADS = 20  # Number of concurrent threads
-MAX_PAGES = 10000  # Reasonable limit for a university website (adjust as needed)
+MAX_PAGES = 20000  # Reasonable limit for a university website
 
 # File extensions to skip
 SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg"]
@@ -79,7 +79,7 @@ else:
 
 def get_urls_from_sitemap(sitemap_url):
     """
-    # Commented out because we're not adding sitemap anymore
+    # Commented out as requested
     try:
         resp = requests.get(sitemap_url, timeout=15)
         resp.raise_for_status()
@@ -107,9 +107,38 @@ def looks_like_trap(url):
 def clean_html(html):
     soup = BeautifulSoup(html, "html.parser")
     
-    # Remove headers, footers, navs
-    for tag in soup.find_all(['header', 'footer', 'nav']):
+    # Remove headers, footers, navs by tag name
+    for tag in soup.find_all(['header', 'footer', 'nav', 'aside']):
         tag.decompose()
+    
+    # Remove common header/footer patterns by class or id
+    header_footer_patterns = [
+        # Common class patterns
+        {'class': lambda x: x and any(pattern in ' '.join(x).lower() for pattern in 
+            ['header', 'footer', 'navigation', 'navbar', 'topbar', 'top-bar', 
+             'breadcrumb', 'menu', 'sidebar', 'social', 'copyright', 'meta',
+             'toolbar', 'masthead', 'banner', 'top-navigation', 'main-nav',
+             'site-header', 'site-footer', 'page-header', 'page-footer'])},
+        # Common ID patterns
+        {'id': lambda x: x and any(pattern in x.lower() for pattern in 
+            ['header', 'footer', 'nav', 'navigation', 'menu', 'breadcrumb',
+             'topbar', 'top-bar', 'sidebar', 'banner', 'masthead'])}
+    ]
+    
+    for pattern in header_footer_patterns:
+        for element in soup.find_all(attrs=pattern):
+            element.decompose()
+    
+    # Remove elements that commonly contain navigation
+    for tag in soup.find_all(['ul', 'ol', 'div']):
+        # Check if it's likely a menu (lots of links, little text)
+        links = tag.find_all('a')
+        if len(links) > 5:
+            text_content = tag.get_text(strip=True)
+            link_text = ''.join([a.get_text(strip=True) for a in links])
+            # If most of the content is link text, it's probably navigation
+            if len(link_text) > 0 and len(link_text) / max(len(text_content), 1) > 0.7:
+                tag.decompose()
     
     # Find main content
     selectors = [
@@ -117,7 +146,9 @@ def clean_html(html):
         ('div', {'role': 'main'}),
         ('div', {'class': 'region-content'}),
         ('article', {}),
-        ('div', {'id': 'content'})
+        ('div', {'id': 'content'}),
+        ('div', {'class': lambda x: x and 'content' in ' '.join(x).lower()}),
+        ('div', {'class': lambda x: x and 'main' in ' '.join(x).lower()})
     ]
     main_content = None
     for tag, attrs in selectors:
@@ -127,14 +158,34 @@ def clean_html(html):
             break
     
     if not main_content:
+        # Try to find the largest content block
+        content_divs = soup.find_all('div')
+        if content_divs:
+            # Find div with most text content
+            main_content = max(content_divs, 
+                             key=lambda d: len(d.get_text(strip=True)) 
+                             if d.get_text(strip=True) else 0)
+    
+    if not main_content:
         main_content = soup.find("body")
     
     if not main_content:
         return ""
     
     # Remove scripts and styles
-    for el in main_content.find_all(['script', 'style']):
+    for el in main_content.find_all(['script', 'style', 'noscript']):
         el.decompose()
+    
+    # Remove common header elements that might be inside main content
+    for tag in main_content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+        text = tag.get_text(strip=True).lower()
+        # Remove headers that are likely site-wide headers
+        if any(pattern in text for pattern in 
+               ['stony brook', 'university', 'navigation', 'menu', 'search',
+                'login', 'sign in', 'contact us', 'quick links']):
+            # But keep it if it's the main page title
+            if tag.name != 'h1' or len(main_content.find_all('h1')) > 1:
+                tag.decompose()
     
     # Remove all hyperlinks but keep their text
     # This is more thorough - it extracts text and removes the entire <a> tag
@@ -156,6 +207,25 @@ def clean_html(html):
     # Remove any [text](url) patterns that might have been created
     import re
     markdown = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', markdown)
+    
+    # Post-process to remove common header/footer text patterns
+    lines = markdown.split('\n')
+    filtered_lines = []
+    skip_patterns = [
+        'skip to main content', 'skip to content', 'skip navigation',
+        'breadcrumb', 'you are here', 'home >', 'back to top',
+        'share this page', 'print this page', 'last modified',
+        'copyright', '©', 'all rights reserved', 'privacy policy',
+        'terms of use', 'accessibility', 'contact us'
+    ]
+    
+    for line in lines:
+        line_lower = line.strip().lower()
+        # Skip lines that are likely header/footer content
+        if not any(pattern in line_lower for pattern in skip_patterns):
+            filtered_lines.append(line)
+    
+    markdown = '\n'.join(filtered_lines)
     
     return markdown.strip()
 
@@ -287,7 +357,7 @@ if os.path.exists(QUEUE_FILE):
         file_urls = [line.strip() for line in f if line.strip()]
         initial_urls.extend(file_urls)
 
-# Commented out sitemap loading
+# Commented out sitemap loading as requested
 # sitemap_urls = get_urls_from_sitemap(SITEMAP_URL)
 # initial_urls.extend(sitemap_urls)
 
