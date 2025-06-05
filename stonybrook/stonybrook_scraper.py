@@ -92,7 +92,7 @@ def get_urls_from_sitemap(sitemap_url):
 
 def looks_like_trap(url):
     parsed = urlparse(url)
-    if parsed.query and not parsed.path.endswith(('.html', '.htm')):
+    if parsed.query:  # Skip any URL with a query string
         return True
     for pattern in SKIP_PATTERNS:
         if pattern in url.lower():
