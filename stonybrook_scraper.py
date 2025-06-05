@@ -15,6 +15,7 @@ from urllib.parse import urljoin, urlparse
 import threading
 from queue import Queue, Empty
 import signal
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -34,6 +35,7 @@ SLEEP_TIME = 1.5
 # Multi-threading config
 NUM_THREADS = 20  # Number of concurrent threads
 MAX_PAGES = 20000  # Reasonable limit for a university website
+QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 
 # File extensions to skip
 SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg"]
@@ -52,7 +54,6 @@ stop_crawl = threading.Event()
 pages_crawled = 0
 pages_crawled_lock = threading.Lock()
 last_queue_save = time.time()
-QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 
 # Setup robots.txt parser
 ROBOTS_URL = f"{ALLOWED_URL_PREFIX}robots.txt"
@@ -70,13 +71,6 @@ try:
 except Exception as e:
     print(f"⚠️  Could not read robots.txt: {e}")
     rp = None  # Fail open: allow everything
-
-# Load or initialize visited set
-if os.path.exists(VISITED_FILE):
-    with open(VISITED_FILE, "r", encoding="utf-8") as f:
-        visited = set(line.strip() for line in f if line.strip())
-else:
-    visited = set()
 
 
 def get_urls_from_sitemap(sitemap_url):
@@ -189,8 +183,7 @@ def clean_html(html):
             if tag.name != 'h1' or len(main_content.find_all('h1')) > 1:
                 tag.decompose()
     
-    # Remove all hyperlinks but keep their text
-    # This is more thorough - it extracts text and removes the entire <a> tag
+    # Remove all hyperlinks but keep their text with proper spacing
     for a in main_content.find_all('a'):
         # Get the text content
         text = a.get_text()
@@ -213,7 +206,6 @@ def clean_html(html):
     
     # Additional cleanup to ensure no markdown links remain
     # Remove any [text](url) patterns that might have been created
-    import re
     markdown = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', markdown)
     
     # Clean up excessive whitespace while preserving paragraph structure
@@ -227,7 +219,6 @@ def clean_html(html):
     markdown = '\n'.join(lines)
     
     # Post-process to remove common header/footer text patterns
-    lines = markdown.split('\n')
     filtered_lines = []
     skip_patterns = [
         'skip to main content', 'skip to content', 'skip navigation',
@@ -404,6 +395,9 @@ def signal_handler(sig, frame):
     stop_crawl.set()
 
 
+# Set up signal handler for graceful shutdown
+signal.signal(signal.SIGINT, signal_handler)
+
 # Load previously visited URLs
 if os.path.exists(VISITED_FILE):
     with open(VISITED_FILE, "r", encoding="utf-8") as f:
@@ -450,9 +444,6 @@ print(f"📊 Already crawled: {len(visited)} pages")
 print(f"📁 Initial queue size: {url_queue.qsize()}")
 print(f"💾 Queue will be saved every {QUEUE_SAVE_INTERVAL} seconds")
 print("(Press Ctrl+C to stop anytime)\n")
-
-# Set up signal handler for graceful shutdown
-signal.signal(signal.SIGINT, signal_handler)
 
 # Create and start worker threads
 threads = []
