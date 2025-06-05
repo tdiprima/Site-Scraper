@@ -51,6 +51,8 @@ url_queue = Queue()
 stop_crawl = threading.Event()
 pages_crawled = 0
 pages_crawled_lock = threading.Lock()
+last_queue_save = time.time()
+QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 
 # Setup robots.txt parser
 ROBOTS_URL = f"{ALLOWED_URL_PREFIX}robots.txt"
@@ -246,9 +248,41 @@ def clean_html(html):
     return markdown.strip()
 
 
+def save_queue_to_file():
+    """Save current queue state to file"""
+    global last_queue_save
+    
+    with queue_lock:
+        # Get all items from queue without removing them
+        temp_items = []
+        queue_items = []
+        
+        # Temporarily drain the queue to get all items
+        while not url_queue.empty():
+            try:
+                item = url_queue.get_nowait()
+                temp_items.append(item)
+                queue_items.append(item)
+            except Empty:
+                break
+        
+        # Put all items back
+        for item in temp_items:
+            url_queue.put(item)
+        
+        # Save to file
+        with file_lock:
+            with open(QUEUE_FILE, "w", encoding="utf-8") as f:
+                for item in queue_items:
+                    f.write(item + "\n")
+        
+        last_queue_save = time.time()
+        print(f"💾 Queue saved: {len(queue_items)} URLs")
+
+
 def worker_thread(thread_id):
     """Worker thread function that processes URLs from the queue"""
-    global pages_crawled
+    global pages_crawled, last_queue_save
     
     while not stop_crawl.is_set():
         try:
@@ -334,6 +368,10 @@ def worker_thread(thread_id):
         for new_url in new_urls:
             url_queue.put(new_url)
         
+        # Periodically save queue
+        if time.time() - last_queue_save > QUEUE_SAVE_INTERVAL:
+            save_queue_to_file()
+        
         try:
             # Clean and extract main content
             markdown = clean_html(html)
@@ -366,12 +404,33 @@ def signal_handler(sig, frame):
     stop_crawl.set()
 
 
+# Load previously visited URLs
+if os.path.exists(VISITED_FILE):
+    with open(VISITED_FILE, "r", encoding="utf-8") as f:
+        visited = set(line.strip() for line in f if line.strip())
+    print(f"📚 Loaded {len(visited)} previously visited URLs")
+else:
+    visited = set()
+
 # Load or initialize queue
-initial_urls = [START_URL]
+initial_urls = []
+queue_loaded = False
+
+# First check if there's a saved queue file
 if os.path.exists(QUEUE_FILE):
     with open(QUEUE_FILE, "r", encoding="utf-8") as f:
         file_urls = [line.strip() for line in f if line.strip()]
-        initial_urls.extend(file_urls)
+        if file_urls:
+            # Filter out already visited URLs
+            file_urls = [url for url in file_urls if url not in visited]
+            initial_urls.extend(file_urls)
+            queue_loaded = True
+            print(f"📂 Resuming from saved queue: {len(file_urls)} URLs to process")
+
+# Only add START_URL if we didn't load a queue
+if not queue_loaded:
+    initial_urls = [START_URL]
+    print("🆕 Starting fresh crawl")
 
 # Commented out sitemap loading as requested
 # sitemap_urls = get_urls_from_sitemap(SITEMAP_URL)
@@ -387,7 +446,9 @@ for url in initial_urls:
 
 print(f"🚀 Starting crawl with {NUM_THREADS} threads...")
 print(f"📊 Maximum pages to crawl: {MAX_PAGES}")
+print(f"📊 Already crawled: {len(visited)} pages") 
 print(f"📁 Initial queue size: {url_queue.qsize()}")
+print(f"💾 Queue will be saved every {QUEUE_SAVE_INTERVAL} seconds")
 print("(Press Ctrl+C to stop anytime)\n")
 
 # Set up signal handler for graceful shutdown
