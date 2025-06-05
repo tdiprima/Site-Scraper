@@ -121,6 +121,9 @@ def clean_html(html):
              'topbar', 'top-bar', 'sidebar', 'banner', 'masthead'])}
     ]
     
+    # Note: Removed 'column', 'columns', 'col-', 'grid', 'row' from the patterns above
+    # We'll handle these separately to extract their content properly
+
     for pattern in header_footer_patterns:
         for element in soup.find_all(attrs=pattern):
             element.decompose()
@@ -171,6 +174,22 @@ def clean_html(html):
     # Remove scripts and styles
     for el in main_content.find_all(['script', 'style', 'noscript']):
         el.decompose()
+    
+    # Handle column-based layouts - extract content but remove column structure
+    # This prevents pipe characters from appearing in the output
+    for el in main_content.find_all('div', class_=lambda x: x and any(
+        pattern in ' '.join(x).lower() for pattern in ['column', 'columns', 'col-', 'grid'])):
+        # Replace the div with its contents, effectively removing the column wrapper
+        el.unwrap()
+    
+    # Remove table elements that might create pipe characters
+    for el in main_content.find_all(['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td']):
+        # Extract text content and replace the table element with it
+        text = el.get_text(separator=' ', strip=True)
+        if text:
+            el.replace_with(soup.new_string(f" {text} "))
+        else:
+            el.decompose()
     
     # Remove common header elements that might be inside main content
     for tag in main_content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
@@ -232,10 +251,17 @@ def clean_html(html):
         line_lower = line.strip().lower()
         # Skip lines that are likely header/footer content
         if not any(pattern in line_lower for pattern in skip_patterns):
-            filtered_lines.append(line)
+            # Also skip lines that are just pipe characters or table remnants
+            if line.strip() not in ['|', '||', '|||', '||||', '|||||', '||||||']:
+                filtered_lines.append(line)
     
     markdown = '\n'.join(filtered_lines)
     
+    # Final cleanup: remove any remaining isolated pipe characters
+    markdown = re.sub(r'\s*\|\s*\|\s*', ' ', markdown)  # Replace || with space
+    markdown = re.sub(r'^\s*\|\s*$', '', markdown, flags=re.MULTILINE)  # Remove lines with just |
+    markdown = re.sub(r'\s*\|\s*', ' ', markdown)  # Replace single | with space
+
     return markdown.strip()
 
 
@@ -377,9 +403,13 @@ def worker_thread(thread_id):
             filename = f"{parsed_start.netloc.replace('.', '_')}_{path}.md"
             filepath = os.path.join(OUTPUT_DIR, filename)
             
+            # Add source URL as HTML comment at the top for RAG context
+            # HTML comments are ignored by most RAG systems so this won't interfere
+            markdown_with_source = f"<!-- Source: {url} -->\n\n{markdown}"
+            
             with file_lock:
                 with open(filepath, "w", encoding="utf-8") as f:
-                    f.write(markdown)
+                    f.write(markdown_with_source)
             
             print(f"[Thread {thread_id}] ✅  Saved {url} → {filepath}")
         except Exception as e:
@@ -426,7 +456,7 @@ if not queue_loaded:
     initial_urls = [START_URL]
     print("🆕 Starting fresh crawl")
 
-# Commented out sitemap loading as requested
+# Commented out sitemap loading
 # sitemap_urls = get_urls_from_sitemap(SITEMAP_URL)
 # initial_urls.extend(sitemap_urls)
 
