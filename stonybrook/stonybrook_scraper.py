@@ -34,7 +34,7 @@ SLEEP_TIME = 3  # More chill pacing
 
 # Multi-threading config
 NUM_THREADS = 10  # Number of concurrent threads
-MAX_PAGES = 20000  # Reasonable limit for a university website
+MAX_PAGES = None  # 20000  # Reasonable limit for a university website
 QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 
 # File extensions to skip
@@ -324,7 +324,7 @@ def worker_thread(thread_id):
         
         # Check page limit
         with pages_crawled_lock:
-            if pages_crawled >= MAX_PAGES:
+            if MAX_PAGES is not None and pages_crawled >= MAX_PAGES:
                 print(f"🛑 Reached maximum page limit ({MAX_PAGES}). Stopping crawl.")
                 stop_crawl.set()
                 url_queue.task_done()
