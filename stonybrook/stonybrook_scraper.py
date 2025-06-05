@@ -16,6 +16,7 @@ import threading
 from queue import Queue, Empty
 import signal
 import re
+import shutil
 
 import requests
 from bs4 import BeautifulSoup
@@ -72,6 +73,13 @@ except Exception as e:
     print(f"⚠️  Could not read robots.txt: {e}")
     rp = None  # Fail open: allow everything
 
+def check_disk_space(path):
+    total, used, free = shutil.disk_usage(path)
+    if free < 1024 * 1024 * 100:  # Less than 100MB free
+        print(f"🛑 Low disk space at {path}! Stopping crawl.")
+        stop_crawl.set()
+        return False
+    return True
 
 def get_urls_from_sitemap(sitemap_url):
     """
@@ -398,6 +406,11 @@ def worker_thread(thread_id):
                 url_queue.task_done()
                 continue
             
+            # Check disk space before writing
+            if not check_disk_space(OUTPUT_DIR):
+                url_queue.task_done()
+                break
+
             # Save file
             parsed_start = urlparse(url)
             path = parsed_start.path.strip("/").replace("/", "_") or "index"
