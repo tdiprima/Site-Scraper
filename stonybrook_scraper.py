@@ -192,8 +192,14 @@ def clean_html(html):
     for a in main_content.find_all('a'):
         # Get the text content
         text = a.get_text()
-        # Replace the entire <a> tag with just its text
-        a.replace_with(text)
+        # Add spaces around the text to prevent content from sticking together
+        # Only add space if there's actual text
+        if text.strip():
+            # Create a text node with spaces
+            new_text = soup.new_string(f" {text} ")
+            a.replace_with(new_text)
+        else:
+            a.decompose()
     
     # Also remove any href attributes that might remain on other elements
     for tag in main_content.find_all(True):
@@ -207,6 +213,16 @@ def clean_html(html):
     # Remove any [text](url) patterns that might have been created
     import re
     markdown = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', markdown)
+    
+    # Clean up excessive whitespace while preserving paragraph structure
+    # Replace multiple spaces with single space
+    markdown = re.sub(r'[ \t]+', ' ', markdown)
+    # Replace more than 2 consecutive newlines with 2
+    markdown = re.sub(r'\n{3,}', '\n\n', markdown)
+    # Clean up spaces at the beginning and end of lines
+    lines = markdown.split('\n')
+    lines = [line.strip() for line in lines]
+    markdown = '\n'.join(lines)
     
     # Post-process to remove common header/footer text patterns
     lines = markdown.split('\n')
