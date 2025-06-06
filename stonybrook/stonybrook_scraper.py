@@ -37,7 +37,7 @@ MAX_DEPTH = 5  # Reasonable depth limit
 DEFAULT_RESUME_DEPTH = 3
 
 # Multi-threading config
-NUM_THREADS = 10  # Number of concurrent threads
+NUM_THREADS = 20  # Number of concurrent threads
 MAX_PAGES = None  # 20000  # Reasonable limit for a university website
 QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 
@@ -78,6 +78,7 @@ except Exception as e:
     print(f"⚠️  Could not read robots.txt: {e}")
     rp = None  # Fail open: allow everything
 
+
 def check_disk_space(path):
     total, used, free = shutil.disk_usage(path)
     if free < 1024 * 1024 * 100:  # Less than 100MB free
@@ -86,9 +87,10 @@ def check_disk_space(path):
         return False
     return True
 
+
 def get_urls_from_sitemap(sitemap_url):
     """
-    # Commented out as requested
+    # Commented out
     try:
         resp = requests.get(sitemap_url, timeout=15)
         resp.raise_for_status()
