@@ -41,6 +41,9 @@ NUM_THREADS = 20  # Number of concurrent threads
 MAX_PAGES = None  # 20000  # Reasonable limit for a university website
 QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 
+# Timeout for threads waiting for new work (in seconds)
+THREAD_TIMEOUT = 30  # If no work for 30 seconds, thread exits
+
 # File extensions to skip
 SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg"]
 SKIP_PATTERNS = ["calendar", "event", "search", "print", "/pdf/", "export", "feed", "rss"]
@@ -60,6 +63,8 @@ pages_crawled_lock = threading.Lock()
 last_queue_save = time.time()
 depth_map = {START_URL: 0}
 depth_map_lock = threading.Lock()
+active_threads = 0
+active_threads_lock = threading.Lock()
 
 # Setup robots.txt parser
 ROBOTS_URL = f"{ALLOWED_URL_PREFIX}robots.txt"
@@ -314,142 +319,168 @@ def save_queue_to_file():
 
 def worker_thread(thread_id):
     """Worker thread function that processes URLs from the queue"""
-    global pages_crawled, last_queue_save
+    global pages_crawled, last_queue_save, active_threads
 
-    while not stop_crawl.is_set():
-        try:
-            # Get URL from queue with timeout
-            url = url_queue.get(timeout=5)
-        except Empty:
-            # No more URLs in queue, check if we should continue
-            if url_queue.empty():
-                time.sleep(2)  # Wait a bit for new URLs
-                if url_queue.empty():  # Still empty, we're done
+    # Track this thread as active
+    with active_threads_lock:
+        active_threads += 1
+
+    consecutive_empty_checks = 0
+    max_empty_checks = 3  # Allow 3 consecutive empty checks before giving up
+    
+    try:
+        while not stop_crawl.is_set():
+            try:
+                # Get URL from queue with timeout
+                url = url_queue.get(timeout=THREAD_TIMEOUT)
+                consecutive_empty_checks = 0  # Reset counter when we get work
+            except Empty:
+                consecutive_empty_checks += 1
+                print(f"[Thread {thread_id}] No work available (check {consecutive_empty_checks}/{max_empty_checks})")
+                
+                # Check if queue is truly empty and no other threads are working
+                if url_queue.empty() and consecutive_empty_checks >= max_empty_checks:
+                    with active_threads_lock:
+                        remaining_threads = active_threads - 1  # Don't count this thread
+                    
+                    if remaining_threads <= 1:  # Only this thread or one other thread left
+                        print(f"[Thread {thread_id}] Queue empty and few threads remaining. Exiting.")
+                        break
+                    else:
+                        print(f"[Thread {thread_id}] Waiting for other threads... ({remaining_threads} still active)")
+                        consecutive_empty_checks = 0  # Reset and keep waiting
+                        continue
+                else:
+                    continue
+
+            url_no_fragment = urlparse(url)._replace(fragment="").geturl()
+
+            # Check if already visited
+            with visited_lock:
+                if url_no_fragment in visited:
+                    url_queue.task_done()
+                    continue
+                visited.add(url_no_fragment)
+
+            # Get current depth
+            with depth_map_lock:
+                current_depth = depth_map.get(url_no_fragment, 0)
+
+            # Check page limit
+            with pages_crawled_lock:
+                if MAX_PAGES is not None and pages_crawled >= MAX_PAGES:
+                    print(f"🛑 Reached maximum page limit ({MAX_PAGES}). Stopping crawl.")
+                    stop_crawl.set()
+                    url_queue.task_done()
                     break
-            continue
+                pages_crawled += 1
+                current_count = pages_crawled
 
-        url_no_fragment = urlparse(url)._replace(fragment="").geturl()
-
-        # Check if already visited
-        with visited_lock:
-            if url_no_fragment in visited:
-                url_queue.task_done()
-                continue
-            visited.add(url_no_fragment)
-
-        # Get current depth
-        with depth_map_lock:
-            current_depth = depth_map.get(url_no_fragment, 0)
-
-        # Check page limit
-        with pages_crawled_lock:
-            if MAX_PAGES is not None and pages_crawled >= MAX_PAGES:
-                print(f"🛑 Reached maximum page limit ({MAX_PAGES}). Stopping crawl.")
-                stop_crawl.set()
-                url_queue.task_done()
-                break
-            pages_crawled += 1
-            current_count = pages_crawled
-
-        # robots.txt check before crawling
-        if rp is not None and not rp.can_fetch(USER_AGENT, url_no_fragment):
-            print(f"[Thread {thread_id}] 🚫 Blocked by robots.txt: {url_no_fragment}")
-            url_queue.task_done()
-            continue
-
-        print(
-            f"[Thread {thread_id}] 🔍 Crawling ({current_count}/{MAX_PAGES}) [depth={current_depth}]: {url_no_fragment}")
-
-        # Save to visited log
-        with file_lock:
-            with open(VISITED_FILE, "a", encoding="utf-8") as f:
-                f.write(url_no_fragment + "\n")
-
-        try:
-            resp = requests.get(url_no_fragment, timeout=REQUEST_TIMEOUT)
-            print(f"[Thread {thread_id}] Attempting to fetch: {url_no_fragment}")
-            resp.raise_for_status()
-        except Exception as e:
-            print(f"[Thread {thread_id}] ⚠️  Skipping {url_no_fragment!r}: {e}")
-            url_queue.task_done()
-            continue
-
-        html = resp.text
-        soup = BeautifulSoup(html, "html.parser")
-
-        # Enqueue internal links, skip docs, keep to allowed domain and prefix
-        new_urls = []
-        for a in soup.find_all("a", href=True):
-            href = urljoin(url_no_fragment, a["href"])
-            parsed = urlparse(href)
-
-            # Remove fragment (anchor)
-            href_no_fragment = parsed._replace(fragment="").geturl()
-            path = parsed.path.lower()
-
-            # Skip unwanted extensions anywhere in path
-            if any(ext in path for ext in SKIP_EXTENSIONS):
-                continue
-            if looks_like_trap(href_no_fragment):
-                continue
-
-            if (parsed.netloc == ALLOWED_DOMAIN and
-                    href_no_fragment.startswith(ALLOWED_URL_PREFIX)):
-
-                # Check if URL is new
-                with visited_lock:
-                    if href_no_fragment not in visited:
-                        if rp is None or rp.can_fetch(USER_AGENT, href_no_fragment):
-                            new_urls.append(href_no_fragment)
-
-        # Add new URLs to queue with depth tracking
-        if current_depth < MAX_DEPTH:
-            for new_url in new_urls:
-                url_queue.put(new_url)
-                # Track depth for new URLs
-                with depth_map_lock:
-                    if new_url not in depth_map:
-                        depth_map[new_url] = current_depth + 1
-        else:
-            print(f"[Thread {thread_id}] 🛑 Max depth {MAX_DEPTH} reached, not enqueueing {len(new_urls)} links")
-
-        # Periodically save queue
-        if time.time() - last_queue_save > QUEUE_SAVE_INTERVAL:
-            save_queue_to_file()
-
-        try:
-            # Clean and extract main content
-            markdown = clean_html(html)
-            if not markdown or len(markdown) < 50:
-                print(f"[Thread {thread_id}] ⚠️  Not enough main content found at {url}, skipping.")
+            # robots.txt check before crawling
+            if rp is not None and not rp.can_fetch(USER_AGENT, url_no_fragment):
+                print(f"[Thread {thread_id}] 🚫 Blocked by robots.txt: {url_no_fragment}")
                 url_queue.task_done()
                 continue
 
-            # Check disk space before writing
-            if not check_disk_space(OUTPUT_DIR):
-                url_queue.task_done()
-                break
+            print(
+                f"[Thread {thread_id}] 🔍 Crawling ({current_count}/{MAX_PAGES}) [depth={current_depth}]: {url_no_fragment}")
 
-            # Save file
-            parsed_start = urlparse(url)
-            path = parsed_start.path.strip("/").replace("/", "_") or "index"
-            filename = f"{parsed_start.netloc.replace('.', '_')}_{path}.md"
-            filepath = os.path.join(OUTPUT_DIR, filename)
-
-            # Add source URL as HTML comment at the top for RAG context
-            # HTML comments are ignored by most RAG systems so this won't interfere
-            markdown_with_source = f"<!-- Source: {url} -->\n\n{markdown}"
-
+            # Save to visited log
             with file_lock:
-                with open(filepath, "w", encoding="utf-8") as f:
-                    f.write(markdown_with_source)
+                with open(VISITED_FILE, "a", encoding="utf-8") as f:
+                    f.write(url_no_fragment + "\n")
 
-            print(f"[Thread {thread_id}] ✅  Saved {url} → {filepath}")
-        except Exception as e:
-            print(f"[Thread {thread_id}] 💥 Error processing {url}: {e}")
+            try:
+                resp = requests.get(url_no_fragment, timeout=REQUEST_TIMEOUT)
+                print(f"[Thread {thread_id}] Attempting to fetch: {url_no_fragment}")
+                resp.raise_for_status()
+            except Exception as e:
+                print(f"[Thread {thread_id}] ⚠️  Skipping {url_no_fragment!r}: {e}")
+                url_queue.task_done()
+                continue
 
-        url_queue.task_done()
-        time.sleep(SLEEP_TIME / NUM_THREADS)  # Distribute sleep across threads
+            html = resp.text
+            soup = BeautifulSoup(html, "html.parser")
+
+            # Enqueue internal links, skip docs, keep to allowed domain and prefix
+            new_urls = []
+            for a in soup.find_all("a", href=True):
+                href = urljoin(url_no_fragment, a["href"])
+                parsed = urlparse(href)
+
+                # Remove fragment (anchor)
+                href_no_fragment = parsed._replace(fragment="").geturl()
+                path = parsed.path.lower()
+
+                # Skip unwanted extensions anywhere in path
+                if any(ext in path for ext in SKIP_EXTENSIONS):
+                    continue
+                if looks_like_trap(href_no_fragment):
+                    continue
+
+                if (parsed.netloc == ALLOWED_DOMAIN and
+                        href_no_fragment.startswith(ALLOWED_URL_PREFIX)):
+
+                    # Check if URL is new
+                    with visited_lock:
+                        if href_no_fragment not in visited:
+                            if rp is None or rp.can_fetch(USER_AGENT, href_no_fragment):
+                                new_urls.append(href_no_fragment)
+
+            # Add new URLs to queue with depth tracking
+            if current_depth < MAX_DEPTH:
+                for new_url in new_urls:
+                    url_queue.put(new_url)
+                    # Track depth for new URLs
+                    with depth_map_lock:
+                        if new_url not in depth_map:
+                            depth_map[new_url] = current_depth + 1
+            else:
+                print(f"[Thread {thread_id}] 🛑 Max depth {MAX_DEPTH} reached, not enqueueing {len(new_urls)} links")
+
+            # Periodically save queue
+            if time.time() - last_queue_save > QUEUE_SAVE_INTERVAL:
+                save_queue_to_file()
+
+            try:
+                # Clean and extract main content
+                markdown = clean_html(html)
+                if not markdown or len(markdown) < 50:
+                    print(f"[Thread {thread_id}] ⚠️  Not enough main content found at {url}, skipping.")
+                    url_queue.task_done()
+                    continue
+
+                # Check disk space before writing
+                if not check_disk_space(OUTPUT_DIR):
+                    url_queue.task_done()
+                    break
+
+                # Save file
+                parsed_start = urlparse(url)
+                path = parsed_start.path.strip("/").replace("/", "_") or "index"
+                filename = f"{parsed_start.netloc.replace('.', '_')}_{path}.md"
+                filepath = os.path.join(OUTPUT_DIR, filename)
+
+                # Add source URL as HTML comment at the top for RAG context
+                # HTML comments are ignored by most RAG systems so this won't interfere
+                markdown_with_source = f"<!-- Source: {url} -->\n\n{markdown}"
+
+                with file_lock:
+                    with open(filepath, "w", encoding="utf-8") as f:
+                        f.write(markdown_with_source)
+
+                print(f"[Thread {thread_id}] ✅  Saved {url} → {filepath}")
+            except Exception as e:
+                print(f"[Thread {thread_id}] 💥 Error processing {url}: {e}")
+
+            url_queue.task_done()
+            time.sleep(SLEEP_TIME / NUM_THREADS)  # Distribute sleep across threads
+
+    finally:
+        # Mark this thread as no longer active
+        with active_threads_lock:
+            active_threads -= 1
+        print(f"[Thread {thread_id}] Shutting down. Active threads remaining: {active_threads}")
 
 
 def signal_handler(sig, frame):
@@ -508,11 +539,21 @@ initial_urls = [url for url in initial_urls if not looks_like_trap(url)]
 for url in initial_urls:
     url_queue.put(url)
 
+# Only exit early if we loaded a queue file but it had no valid URLs
+# Don't exit if we're starting fresh (queue_loaded=False means we're starting with START_URL)
+if url_queue.empty() and queue_loaded:
+    print("📭 No new URLs to process from saved queue (all already visited). Exiting.")
+    exit(0)
+elif url_queue.empty() and not queue_loaded:
+    print("🚨 Error: No initial URLs available to start crawling. Check START_URL.")
+    exit(1)
+
 print(f"🚀 Starting crawl with {NUM_THREADS} threads...")
 print(f"📊 Maximum pages to crawl: {MAX_PAGES}")
 print(f"📊 Already crawled: {len(visited)} pages") 
 print(f"📁 Initial queue size: {url_queue.qsize()}")
 print(f"💾 Queue will be saved every {QUEUE_SAVE_INTERVAL} seconds")
+print(f"⏱️  Threads will timeout after {THREAD_TIMEOUT} seconds of no work")
 print("(Press Ctrl+C to stop anytime)\n")
 
 # Create and start worker threads
@@ -528,8 +569,12 @@ try:
     for t in threads:
         t.join()
     
-    # Wait for queue to be empty
-    url_queue.join()
+    # Wait for queue to be empty (with timeout)
+    try:
+        url_queue.join()
+    except KeyboardInterrupt:
+        print("\n🛑 Crawl interrupted by user during queue processing. Shutting down...\n")
+        stop_crawl.set()
     
 except KeyboardInterrupt:
     print("\n🛑 Crawl interrupted by user. Shutting down...\n")
@@ -551,4 +596,8 @@ finally:
     print(f"\n📊 Total pages crawled: {pages_crawled}")
     print(f"📁 Queue saved to {QUEUE_FILE} ({len(remaining_urls)} URLs remaining)")
     print(f"📁 Visited URLs saved to {VISITED_FILE}")
+    if len(remaining_urls) == 0:
+        print("🎉 Crawl completed! All URLs processed.")
+    else:
+        print("⏸️  Crawl stopped with remaining URLs. Run again to resume.")
     print("👋 Bye!")
