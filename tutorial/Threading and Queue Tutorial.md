@@ -120,7 +120,7 @@ You're all set! Go thread some vibes 🤘
 
 ## Command Question
 
-Great question! Let’s clarify exactly what's happening here:
+Great question! Let's clarify exactly what's happening here:
 
 ```python
 thread1 = threading.Thread(target=task, args=("Thread-1", 2))
@@ -190,7 +190,7 @@ thread1.join()
 thread2.join()
 ```
 
-* We directly created **two explicit variables** (`thread1`, `thread2`). Each thread is individually referenced, so we didn’t need to put them into a list.
+* We directly created **two explicit variables** (`thread1`, `thread2`). Each thread is individually referenced, so we didn't need to put them into a list.
 
 ### 🌟 **2nd example (with append):**
 

@@ -137,13 +137,13 @@ Now, keep experimenting! Web scraping skills open tons of possibilities, from co
 
 ## Respecting robots.txt
 
-Awesome question! Respecting `robots.txt` is key if you don’t want to be *that* jerk bot that gets IP-banned. `robots.txt` tells bots what they can and can’t scrape. While it’s not legally binding, it’s basic internet etiquette and *sometimes* is enforced by sites.
+Awesome question! Respecting `robots.txt` is key if you don't want to be *that* jerk bot that gets IP-banned. `robots.txt` tells bots what they can and can't scrape. While it's not legally binding, it's basic internet etiquette and *sometimes* is enforced by sites.
 
-**Here’s how you do it:**
+**Here's how you do it:**
 
 ## 1. Check robots.txt Before Scraping
 
-You can use the `urllib.robotparser` module from Python’s standard library. It lets you programmatically check if your bot (user-agent) is allowed to access a specific URL.
+You can use the `urllib.robotparser` module from Python's standard library. It lets you programmatically check if your bot (user-agent) is allowed to access a specific URL.
 
 ### Example: Respecting robots.txt in Python
 
@@ -190,21 +190,21 @@ else:
 
 * Always check for and respect crawl delays in `robots.txt` too (not handled by `robotparser` by default).
 * If you plan to scrape a lot, add delays between requests—even if not required by `robots.txt`.
-* Set a clear, unique `User-Agent` string, don’t just use "Mozilla/5.0" like every other generic bot.
+* Set a clear, unique `User-Agent` string, don't just use "Mozilla/5.0" like every other generic bot.
 
 ---
 
 **TL;DR:**
-Don’t be a script kiddie. Always check `robots.txt` and behave like a decent internet citizen.
+Don't be a script kiddie. Always check `robots.txt` and behave like a decent internet citizen.
 If you want to go deeper or need help parsing specific rules or delays, let me know!
 
 ## How does it know what the heck a "title" is?
 
-Ayy, fire question! Let’s break down **how BeautifulSoup knows what a "title" is in this context**—and why `.select('.titleline')` grabs the right stuff.
+Ayy, fire question! Let's break down **how BeautifulSoup knows what a "title" is in this context**—and why `.select('.titleline')` grabs the right stuff.
 
 ---
 
-## What’s Actually Happening Here?
+## What's Actually Happening Here?
 
 * The code
 
@@ -220,13 +220,13 @@ Ayy, fire question! Let’s break down **how BeautifulSoup knows what a "title" 
   <span class="titleline"><a href="...">Being fat is a trap</a> ... </span>
   ```
 
-  the “title” isn’t some special keyword or tag—it’s just **inside a span whose class is "titleline"**.
+  the "title" isn't some special keyword or tag—it's just **inside a span whose class is "titleline"**.
 
 ---
 
 ## Why does `.select('.titleline')` work?
 
-* **`.select('.titleline')`** says “Give me all elements with class `titleline`.”
+* **`.select('.titleline')`** says "Give me all elements with class `titleline`."
 * The HTML for each news item on Hacker News (which this looks like!) wraps the title link in a span like `<span class="titleline">`.
 * So when you do:
 
@@ -243,12 +243,12 @@ Ayy, fire question! Let’s break down **how BeautifulSoup knows what a "title" 
 
 ---
 
-## **How does BeautifulSoup know what the “title” is?**
+## **How does BeautifulSoup know what the "title" is?**
 
-**It doesn’t!**
+**It doesn't!**
 
-* *You* know, from looking at the site’s HTML, that the thing you want (the news title) is always inside a span with class `titleline`.
-* BeautifulSoup just finds whatever matches your selector—no “smarts” involved. It doesn’t know what’s a “title” or not. You’re telling it what to look for, based on the page’s structure.
+* *You* know, from looking at the site's HTML, that the thing you want (the news title) is always inside a span with class `titleline`.
+* BeautifulSoup just finds whatever matches your selector—no "smarts" involved. It doesn't know what's a "title" or not. You're telling it what to look for, based on the page's structure.
 
 ---
 
@@ -262,15 +262,15 @@ for idx, title in enumerate(titles, start=1):
     print(f"{idx}: {headline}")
 ```
 
-This only grabs the `<a>` tag’s text inside each `titleline`.
+This only grabs the `<a>` tag's text inside each `titleline`.
 
 ---
 
 ## TL;DR:
 
 * `.select('.titleline')` finds all elements with that class.
-* BeautifulSoup doesn’t “know” what’s a title—it just matches the class name.
-* You’re the smart one here.
+* BeautifulSoup doesn't "know" what's a title—it just matches the class name.
+* You're the smart one here.
 * Want the cleanest result? Grab the `<a>` inside that span!
 
 ---
@@ -322,6 +322,6 @@ Boom. You now have a clean headline + link combo.
 ---
 
 **TL;DR:**
-Yep, it "worked" by accident. Don’t trust coincidences in scraping—be precise with your selectors. Target the `<a>` directly and you're golden. 🔥
+Yep, it "worked" by accident. Don't trust coincidences in scraping—be precise with your selectors. Target the `<a>` directly and you're golden. 🔥
 
 <br>
