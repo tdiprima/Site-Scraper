@@ -170,17 +170,29 @@ def main():
     OUTPUT_FILE = "stonybrook_qa_results.json"
 
     # Your questions
+    # questions = [
+    #     "What standard operating procedures (SOPs) exist for managing patient records at Stony Brook Medicine?",
+    #     "Who are the top three experts at Stony Brook University specializing in cardiovascular diseases?",
+    #     "Can you outline the primary research focuses of the Department of Pharmacological Sciences?",
+    #     "What emergency protocols does Stony Brook Medicine follow for infectious disease outbreaks?",
+    #     "What collaborations exist between the biomedical informatics department and other research departments?",
+    #     "Who should I contact if I'm interested in joining clinical trials at Stony Brook?",
+    #     "List key services provided by the Stony Brook University Hospital for cancer patients.",
+    #     "What guidelines or resources are provided to students and staff for mental health support?",
+    #     "Describe recent initiatives taken by Stony Brook to advance AI applications in healthcare.",
+    #     "How does Stony Brook University ensure compliance with data privacy regulations (like HIPAA)?"
+    # ]
     questions = [
-        "What standard operating procedures (SOPs) exist for managing patient records at Stony Brook Medicine?",
-        "Who are the top three experts at Stony Brook University specializing in cardiovascular diseases?",
-        "Can you outline the primary research focuses of the Department of Pharmacological Sciences?",
-        "What emergency protocols does Stony Brook Medicine follow for infectious disease outbreaks?",
-        "What collaborations exist between the biomedical informatics department and other research departments?",
-        "Who should I contact if I'm interested in joining clinical trials at Stony Brook?",
-        "List key services provided by the Stony Brook University Hospital for cancer patients.",
-        "What guidelines or resources are provided to students and staff for mental health support?",
-        "Describe recent initiatives taken by Stony Brook to advance AI applications in healthcare.",
-        "How does Stony Brook University ensure compliance with data privacy regulations (like HIPAA)?"
+        "What are the most popular undergraduate majors at Stony Brook University?",
+        "How does Stony Brook support undergraduate research and experiential learning?",
+        "What partnerships does Stony Brook have with industry or national research labs?",
+        "What are the current campus expansion or construction projects underway?",
+        "How does Stony Brook rank nationally and internationally in terms of research output?",
+        "What sustainability and climate action initiatives has Stony Brook implemented?",
+        "What unique programs or honors colleges are available to high-achieving students?",
+        "What are the housing options and living-learning communities on campus?",
+        "How does Stony Brook support diversity, equity, and inclusion among students and faculty?",
+        "What is the economic impact of Stony Brook University on Long Island and New York State?"
     ]
 
     # Check API key
