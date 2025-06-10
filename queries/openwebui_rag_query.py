@@ -197,7 +197,7 @@ def main():
     # REALLY REQUIRES RAG:
     questions = [
         "What academic support services are offered by the Academic Success & Tutoring Center at Stony Brook?",
-        "What steps should students follow during a shelter-in-place order according to Stony Brook’s emergency guide?",
+        "What steps should students follow during a shelter-in-place order according to Stony Brook's emergency guide?",
         "Which bus routes connect the Health Sciences Center to West Campus, according to the 2023 campus map?",
         "Which buildings house large lecture halls (over 250 seats) for Fall 2023 classes?",
         "According to the 2013 diversity plan, what were the top 3 institutional goals for increasing faculty diversity?",
@@ -207,6 +207,18 @@ def main():
         "What is the deductible and out-of-pocket max for the 2023–2024 student health insurance plan?",
         "What are the quiet hours in Stony Brook's residential communities, and how are violations handled?"
     ]
+    # questions = [
+    #     "Who should students contact for general inquiries about Stony Brook University?  If you don't know the answer, then say so.",
+    #     "Name two alumni highlighted by Stony Brook for notable career achievements.  If you don't know the answer, then say so.",
+    #     "What are the accepted payment methods for tuition at Stony Brook?  If you don't know the answer, then say so.",
+    #     "What date did the Spring 2023 semester start at Stony Brook, according to the academic calendar?  If you don't know the answer, then say so.",
+    #     "What are the current COVID-19 safety rules for students living on campus?  If you don't know the answer, then say so.",
+    #     "What activities are explicitly prohibited on Stony Brook's network?  If you don't know the answer, then say so.",
+    #     "What are the operating hours of the main library during finals week?  If you don't know the answer, then say so.",
+    #     "What are the potential sanctions for academic dishonesty at Stony Brook?  If you don't know the answer, then say so.",
+    #     "What are the penalties for unauthorized parking in a reserved lot?  If you don't know the answer, then say so.",
+    #     "Which undergraduate majors at Stony Brook offer a combined BS/MS track?  If you don't know the answer, then say so."
+    # ]
 
     # Check API key
     if API_KEY == 'your-api-key-here':
@@ -224,7 +236,7 @@ def main():
             questions=questions,
             collection_id=COLLECTION_ID,
             output_file=OUTPUT_FILE,
-            delay_between_questions=2.0,  # 2 second delay between questions
+            delay_between_questions=2.0,  # 2-second delay between questions
             model=MODEL
         )
     except KeyboardInterrupt:
