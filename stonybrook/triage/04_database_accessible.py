@@ -1,3 +1,4 @@
+# Verify SQLite database accessibility and inspect recent knowledge base entries.
 import sqlite3
 
 # Check if we can still access the database

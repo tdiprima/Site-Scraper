@@ -1,3 +1,4 @@
+# Verify the cleaned collection is working and test querying it via ChromaDB.
 import chromadb
 
 # Quick verification that the collection is ready

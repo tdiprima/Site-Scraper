@@ -1,3 +1,4 @@
+# Delete the original duplicated collection from both ChromaDB and the SQLite DB.
 import chromadb
 import sqlite3
 

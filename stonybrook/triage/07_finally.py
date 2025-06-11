@@ -1,3 +1,4 @@
+# Recreate deduplicated ChromaDB collection without embeddings to resolve mismatch issues.
 import chromadb
 import sqlite3
 import time

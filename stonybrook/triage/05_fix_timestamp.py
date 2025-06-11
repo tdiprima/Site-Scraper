@@ -1,3 +1,4 @@
+# Fix invalid timestamp formats in the 'Stony Brook Clean' knowledge base entry.
 import sqlite3
 import time
 

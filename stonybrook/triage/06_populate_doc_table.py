@@ -1,3 +1,4 @@
+# Populate the 'document' table in SQLite DB with metadata from the deduplicated ChromaDB collection.
 import sqlite3
 import chromadb
 import time

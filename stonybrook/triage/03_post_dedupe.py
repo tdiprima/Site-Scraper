@@ -1,3 +1,4 @@
+# Fully deduplicate original collection (including embeddings) and register the cleaned version in ChromaDB.
 import chromadb
 import sqlite3
 

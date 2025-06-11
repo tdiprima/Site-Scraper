@@ -1,3 +1,4 @@
+# Deduplicate documents by source and create a new 'stonybrook_clean' ChromaDB collection.
 import chromadb
 
 client = chromadb.PersistentClient(path="/data/docker/volumes/open-webui/_data/vector_db")

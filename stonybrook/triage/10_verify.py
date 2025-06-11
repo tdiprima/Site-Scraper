@@ -1,3 +1,4 @@
+# Confirm cleanup: validate deletion of old collection and verify integrity of the new one.
 import chromadb
 import sqlite3
 
