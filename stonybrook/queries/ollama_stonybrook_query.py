@@ -3,30 +3,27 @@ import json
 from datetime import datetime
 
 # Latest Stony Brook questions
-# questions = [
-#     "What are the most popular undergraduate majors at Stony Brook University?",
-#     "How does Stony Brook support undergraduate research and experiential learning?",
-#     "What partnerships does Stony Brook have with industry or national research labs?",
-#     "What are the current campus expansion or construction projects underway?",
-#     "How does Stony Brook rank nationally and internationally in terms of research output?",
-#     "What sustainability and climate action initiatives has Stony Brook implemented?",
-#     "What unique programs or honors colleges are available to high-achieving students?",
-#     "What are the housing options and living-learning communities on campus?",
-#     "How does Stony Brook support diversity, equity, and inclusion among students and faculty?",
-#     "What is the economic impact of Stony Brook University on Long Island and New York State?"
-# ]
-# REALLY REQUIRES RAG
 questions = [
-    "What academic support services are offered by the Academic Success & Tutoring Center at Stony Brook?",
-    "What steps should students follow during a shelter-in-place order according to Stony Brook’s emergency guide?",
-    "Which bus routes connect the Health Sciences Center to West Campus, according to the 2023 campus map?",
-    "Which buildings house large lecture halls (over 250 seats) for Fall 2023 classes?",
-    "According to the 2013 diversity plan, what were the top 3 institutional goals for increasing faculty diversity?",
-    "Where are faculty and staff permitted to park near the Health Sciences Center?",
-    "Who is listed as the director of networking services in the IT department staff directory?",
-    "Which courses are required for first-semester nursing students in Fall 2023?",
-    "What is the deductible and out-of-pocket max for the 2023–2024 student health insurance plan?",
-    "What are the quiet hours in Stony Brook's residential communities, and how are violations handled?"
+    "What is Stony Brook's SAT code for standardized test reporting?",
+    "What does URECA stand for at Stony Brook University?",
+    "What are the three first-year housing communities at Stony Brook University?",
+    "What is the email address for undergraduate admissions questions at Stony Brook University?",
+    "What are the different pathways to get research experience at Stony Brook University, both on-campus and off-campus?",
+    "What are all the ways a transfer student can apply to Stony Brook University, and how do their requirements differ from first-year students?",
+    "Walk me through the complete housing application process for a new first-year student at Stony Brook University, including all deadlines.",
+    "What are all the requirements and steps to apply for the URECA Summer Research Program at Stony Brook University?",
+    "If I'm interested in pre-med, what specific programs, requirements, and opportunities does Stony Brook University offer?",
+    "What specific accommodations and services does Stony Brook University provide for students with dietary restrictions or food allergies?",
+    "What research opportunities are specifically available at Stony Brook University for first-year students who are new to research?",
+    "How do international students' application requirements at Stony Brook University differ from domestic students?",
+    "If I'm a computer science major at Stony Brook University interested in AI research, what specific faculty, labs, research opportunities, and funding options are available?",
+    "What are all the costs associated with living on campus at Stony Brook (housing, meals, fees) and what financial aid options help cover them?",
+    "How does Stony Brook University's partnership with Brookhaven National Laboratory create opportunities for students, and in which departments?",
+    "What are all the important deadlines for a high school senior applying to Stony Brook University for Fall 2026 admission, including housing, financial aid, and special programs?",
+    "What's Stony Brook University's current policy on standardized testing, and how does it affect different types of applicants?",
+    "I'm a prospective biology major at Stony Brook University interested in marine science and undergraduate research. Based on everything Stony Brook offers, what would be my best path through the university?",
+    "What should a student at Stony Brook University do if they're struggling academically and need support services? What resources are available?",
+    "I want to study abroad but also do research. How can I combine these goals at Stony Brook University?"
 ]
 
 MODEL = "llama4:latest"  # Change if you want another model
