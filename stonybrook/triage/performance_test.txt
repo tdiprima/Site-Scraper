@@ -1,0 +1,12 @@
+=== Performance Test ===
+Retrieving top   10: 0.641 seconds
+Retrieving top   50: 0.099 seconds
+Retrieving top  100: 0.101 seconds
+Retrieving top  500: 0.170 seconds
+Retrieving top 1000: 0.113 seconds
+
+=== Conclusion ===
+If retrieval takes <0.5 seconds even for k=1000, the system top_k is fine.
+The real performance cost is in the reranking model, not the vector search.
+
+You can leave it at 1032 - it's designed to cast a wide net!
