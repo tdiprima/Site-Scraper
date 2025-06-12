@@ -1,3 +1,4 @@
+# Systematically test random queries to check if retrieval issues are specific or systemic.
 import chromadb
 import random
 

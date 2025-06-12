@@ -1,4 +1,5 @@
 # Find the smoking gun
+# Deeply investigate retrieval of specific SOP documents to diagnose embedding or indexing issues.
 import chromadb
 
 client = chromadb.PersistentClient(path="/app/backend/data/vector_db")

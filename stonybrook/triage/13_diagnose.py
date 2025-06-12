@@ -1,3 +1,4 @@
+# Diagnose retrieval issues by testing multiple queries and identifying possible configuration problems.
 import chromadb
 
 client = chromadb.PersistentClient(path="/app/backend/data/vector_db")

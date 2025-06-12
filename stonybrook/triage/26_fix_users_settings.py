@@ -4,18 +4,55 @@ import json
 conn = sqlite3.connect('/app/backend/data/webui.db')
 cursor = conn.cursor()
 
-print("=== PART 1: Fixing All Existing Users ===")
+print("=== PART 1: Fixing All Existing Users (Including OIDC) ===")
 
 # Get all users
 cursor.execute("SELECT id, name, email, settings FROM user")
 users = cursor.fetchall()
 
 fixed_count = 0
+oidc_count = 0
+error_count = 0
+
 for user_id, name, email, settings_json in users:
     try:
-        settings = json.loads(settings_json)
+        # Handle None or empty settings (common with OIDC users)
+        if settings_json is None or settings_json == '':
+            print(f"🔧 {name} ({email}): No settings found (OIDC user?) - Creating defaults")
+            settings = {
+                'ui': {
+                    'params': {
+                        'top_k': 50,
+                        'relevance_threshold': 0.0
+                    }
+                }
+            }
+            cursor.execute("UPDATE user SET settings = ? WHERE id = ?", 
+                         (json.dumps(settings), user_id))
+            oidc_count += 1
+            continue
+            
+        # Try to parse existing settings
+        try:
+            settings = json.loads(settings_json)
+        except json.JSONDecodeError:
+            print(f"⚠️  {name} ({email}): Invalid JSON in settings - Creating defaults")
+            settings = {
+                'ui': {
+                    'params': {
+                        'top_k': 50,
+                        'relevance_threshold': 0.0
+                    }
+                }
+            }
+            cursor.execute("UPDATE user SET settings = ? WHERE id = ?", 
+                         (json.dumps(settings), user_id))
+            error_count += 1
+            continue
         
         # Ensure the ui.params structure exists
+        if settings is None:
+            settings = {}
         if 'ui' not in settings:
             settings['ui'] = {}
         if 'params' not in settings['ui']:
@@ -37,111 +74,146 @@ for user_id, name, email, settings_json in users:
             print(f"✓ {name} ({email}): top_k already {current_top_k}")
             
     except Exception as e:
-        print(f"Error processing {name}: {e}")
+        print(f"❌ Error processing {name} ({email}): {e}")
+        error_count += 1
 
 conn.commit()
-print(f"\n✅ Fixed {fixed_count} users!")
+print(f"\n✅ Summary:")
+print(f"   - Fixed existing users: {fixed_count}")
+print(f"   - Fixed OIDC users: {oidc_count}")
+print(f"   - Errors encountered: {error_count}")
+print(f"   - Total users processed: {len(users)}")
 
 conn.close()
 
-print("\n=== PART 2: Setting Better Defaults for New Users ===")
+print("\n=== PART 2: Creating Startup Script for Future OIDC Users ===")
 
-# First, let's find where the defaults are set
 import os
-import glob
 
-print("\nSearching for default configuration files...")
-
-search_patterns = [
-    "/app/backend/**/constants.py",
-    "/app/backend/**/config*.py", 
-    "/app/backend/**/defaults*.py",
-    "/app/backend/**/settings*.py",
-    "/app/backend/apps/webui/**/*.py"
-]
-
-default_files = []
-for pattern in search_patterns:
-    default_files.extend(glob.glob(pattern, recursive=True))
-
-# Look for files that might contain defaults
-for filepath in default_files[:10]:  # Check first 10 files
-    try:
-        with open(filepath, 'r') as f:
-            content = f.read()
-            if 'top_k' in content or 'DEFAULT' in content or 'params' in content:
-                print(f"\nFound potential defaults in: {filepath}")
-                # Show relevant lines
-                for i, line in enumerate(content.split('\n')):
-                    if 'top_k' in line.lower() or ('default' in line.lower() and 'param' in line.lower()):
-                        print(f"  Line {i+1}: {line.strip()}")
-    except:
-        pass
-
-print("\n=== IMMEDIATE SOLUTION ===")
-print("While we search for the defaults file, here's a quick fix:")
-print("\n1. Add a startup script that ensures good defaults:")
-
-# Create a startup fix script
+# Create a more robust startup fix script
 startup_script = '''#!/bin/bash
-# /app/fix_defaults.sh - Run this after Open WebUI starts
+# /app/fix_oidc_defaults.sh - Run this periodically or on startup
 
-echo "Ensuring good RAG defaults for all users..."
+echo "Ensuring good RAG defaults for all users (including OIDC)..."
 
 python3 << 'EOF'
 import sqlite3
 import json
+import time
 
-conn = sqlite3.connect('/app/backend/data/webui.db')
-cursor = conn.cursor()
+def fix_user_settings():
+    conn = sqlite3.connect('/app/backend/data/webui.db')
+    cursor = conn.cursor()
+    
+    # Get all users
+    cursor.execute("SELECT id, name, email, settings FROM user")
+    users = cursor.fetchall()
+    
+    fixed_count = 0
+    
+    for user_id, name, email, settings_json in users:
+        try:
+            # Initialize settings if None or empty
+            if settings_json is None or settings_json == '':
+                settings = {}
+            else:
+                try:
+                    settings = json.loads(settings_json)
+                except:
+                    settings = {}
+            
+            # Ensure structure exists
+            if 'ui' not in settings:
+                settings['ui'] = {}
+            if 'params' not in settings['ui']:
+                settings['ui']['params'] = {}
+            
+            # Check and fix top_k
+            current = settings['ui']['params'].get('top_k', 0)
+            if current < 50:
+                settings['ui']['params']['top_k'] = 50
+                settings['ui']['params']['relevance_threshold'] = 0.0
+                cursor.execute("UPDATE user SET settings = ? WHERE id = ?", 
+                             (json.dumps(settings), user_id))
+                fixed_count += 1
+                print(f"Fixed {name} ({email})")
+        except Exception as e:
+            print(f"Error with {name}: {e}")
+    
+    conn.commit()
+    conn.close()
+    
+    if fixed_count > 0:
+        print(f"\\nFixed {fixed_count} users")
+    else:
+        print("All users have correct settings")
 
-# Fix any users with default or low top_k
-cursor.execute("SELECT id, name, settings FROM user")
-for user_id, name, settings_json in cursor.fetchall():
-    try:
-        settings = json.loads(settings_json)
-        if 'ui' not in settings: settings['ui'] = {}
-        if 'params' not in settings['ui']: settings['ui']['params'] = {}
-        
-        current = settings['ui']['params'].get('top_k', 0)
-        if current < 50:
-            settings['ui']['params']['top_k'] = 50
-            settings['ui']['params']['relevance_threshold'] = 0.0
-            cursor.execute("UPDATE user SET settings = ? WHERE id = ?", 
-                         (json.dumps(settings), user_id))
-            print(f"Fixed {name}")
-    except:
-        pass
+# Run the fix
+fix_user_settings()
 
-conn.commit()
-conn.close()
-print("Done!")
+# Optionally, run continuously to catch new OIDC logins
+if "--watch" in sys.argv:
+    print("\\nWatching for new users...")
+    while True:
+        time.sleep(300)  # Check every 5 minutes
+        fix_user_settings()
 EOF
 '''
 
-with open('/app/fix_defaults.sh', 'w') as f:
+with open('/app/fix_oidc_defaults.sh', 'w') as f:
     f.write(startup_script)
 
-os.chmod('/app/fix_defaults.sh', 0o755)
+os.chmod('/app/fix_oidc_defaults.sh', 0o755)
 
-print("Created /app/fix_defaults.sh")
-print("\n2. Add this to your docker-compose.yml or startup:")
-print("   command: bash -c '/app/fix_defaults.sh && [original start command]'")
+print("Created /app/fix_oidc_defaults.sh")
 
-print("\n=== SUMMARY ===")
-print("✅ All existing users fixed with top_k=50")
-print("✅ System reranker already fixed to return 20 results")
-print("✅ Created startup script to fix new users automatically")
-print("\n📝 TODO: Find and modify the actual defaults file")
-print("   (likely in /app/backend/constants.py or similar)")
+print("\n=== USAGE OPTIONS ===")
+print("\n1. One-time fix (already done above)")
+print("\n2. Add to startup in docker-compose.yml:")
+print("   command: bash -c '/app/fix_oidc_defaults.sh && [original start command]'")
+print("\n3. Run as a background watcher for new OIDC users:")
+print("   nohup /app/fix_oidc_defaults.sh --watch > /app/logs/fix_oidc.log 2>&1 &")
+print("\n4. Add as a cron job:")
+print("   */5 * * * * /app/fix_oidc_defaults.sh >> /app/logs/fix_oidc.log 2>&1")
 
-# Let's also check the Open WebUI version for documentation
-try:
-    cursor = sqlite3.connect('/app/backend/data/webui.db').cursor()
-    cursor.execute("SELECT data FROM config")
-    config = json.loads(cursor.fetchone()[0])
-    version = config.get('ui', {}).get('version', 'unknown')
-    print(f"\n📌 Open WebUI Version: {version}")
-    print("   Check their GitHub for where defaults are set in this version")
-except:
-    pass
+print("\n=== ADDITIONAL RECOMMENDATION ===")
+print("For a permanent fix, you should modify the OIDC user creation code")
+print("in Open WebUI to set proper defaults when creating new users.")
+print("Look for files like:")
+print("  - /app/backend/apps/webui/routers/auths.py")
+print("  - /app/backend/apps/webui/models/users.py")
+print("And ensure new users get created with proper default settings.")
+
+# Let's also create a SQL trigger as a backup
+print("\n=== CREATING SQL TRIGGER ===")
+trigger_sql = '''
+-- This trigger ensures new users get proper defaults
+-- Run this in your SQLite database
+
+CREATE TRIGGER IF NOT EXISTS set_user_defaults_on_insert
+AFTER INSERT ON user
+FOR EACH ROW
+WHEN NEW.settings IS NULL OR NEW.settings = ''
+BEGIN
+    UPDATE user 
+    SET settings = '{"ui": {"params": {"top_k": 50, "relevance_threshold": 0.0}}}'
+    WHERE id = NEW.id;
+END;
+
+-- Also create one for updates in case settings get cleared
+CREATE TRIGGER IF NOT EXISTS fix_user_defaults_on_update  
+AFTER UPDATE OF settings ON user
+FOR EACH ROW
+WHEN NEW.settings IS NULL OR NEW.settings = ''
+BEGIN
+    UPDATE user 
+    SET settings = '{"ui": {"params": {"top_k": 50, "relevance_threshold": 0.0}}}'
+    WHERE id = NEW.id;
+END;
+'''
+
+with open('/app/user_defaults_triggers.sql', 'w') as f:
+    f.write(trigger_sql)
+
+print("Created /app/user_defaults_triggers.sql")
+print("Apply with: sqlite3 /app/backend/data/webui.db < /app/user_defaults_triggers.sql")

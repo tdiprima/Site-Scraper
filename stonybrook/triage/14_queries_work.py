@@ -1,4 +1,4 @@
-# Let me create a quick reference guide for you
+# Provide suggested improved queries to better match Open WebUI's retrieval system.
 queries_to_try = [
     "Tell me about the Renaissance School of Medicine COVID data commons",
     "Describe the COVID-19 data analytics developed by Renaissance School and Engineering",

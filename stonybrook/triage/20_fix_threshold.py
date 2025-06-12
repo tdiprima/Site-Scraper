@@ -1,3 +1,4 @@
+# Update user-specific RAG settings to remove overly restrictive similarity thresholds.
 import sqlite3
 import json
 

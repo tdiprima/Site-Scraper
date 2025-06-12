@@ -1,3 +1,4 @@
+# Extract current RAG threshold settings from Open WebUI's database configuration.
 import sqlite3
 import json
 

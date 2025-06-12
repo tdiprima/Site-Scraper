@@ -1,3 +1,4 @@
+# Adjust reranking settings in Open WebUI to ensure enough results pass through after reranking.
 import sqlite3
 import json
 

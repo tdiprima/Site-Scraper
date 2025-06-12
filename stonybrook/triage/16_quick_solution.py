@@ -1,3 +1,4 @@
+# Quickly fix retrieval issues by re-adding important COVID-19 documents with enhanced metadata.
 import chromadb
 import uuid
 

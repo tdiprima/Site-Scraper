@@ -1,3 +1,4 @@
+# Investigate Open WebUI's configuration files and database tables to locate similarity threshold settings.
 import sqlite3
 import json
 import os

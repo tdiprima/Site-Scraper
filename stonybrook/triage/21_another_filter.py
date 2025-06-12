@@ -1,3 +1,4 @@
+# Investigate further hidden filtering mechanisms in the Open WebUI configuration affecting retrieval.
 import sqlite3
 import json
 
