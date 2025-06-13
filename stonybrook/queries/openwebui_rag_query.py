@@ -171,38 +171,17 @@ def main():
 
     # Your questions
     questions = [
-        "What is Stony Brook's SAT code for standardized test reporting?",
-        "What is the housing deposit amount for undergraduate students at Stony Brook University?",
-        "What does URECA stand for at Stony Brook University?",
-        "What are the three first-year housing communities at Stony Brook University?",
-        "What is the email address for undergraduate admissions questions at Stony Brook University?",
-        "What's the difference between corridor-style and suite-style housing at Stony Brook, and which communities offer each type?",
-        "Compare the meal plan options at Stony Brook University – what's included in Wolfie Deluxe vs Wolfie Unlimited?",
-        "What are the different pathways to get research experience at Stony Brook University, both on-campus and off-campus?",
-        "What are all the ways a transfer student can apply to Stony Brook University, and how do their requirements differ from first-year students?",
-        "Walk me through the complete housing application process for a new first-year student at Stony Brook University, including all deadlines.",
+        "Compare the meal plan options at Stony Brook University - what's included in Wolfie Deluxe vs Wolfie Unlimited?",
         "What are all the requirements and steps to apply for the URECA Summer Research Program at Stony Brook University?",
-        "If I'm interested in pre-med, what specific programs, requirements, and opportunities does Stony Brook University offer?",
         "What's the complete process for a continuing student at Stony Brook to select housing for next year?",
-        "What specific accommodations and services does Stony Brook University provide for students with dietary restrictions or food allergies?",
-        "What options are available for students who missed the housing deposit deadline at Stony Brook University?",
-        "What research opportunities are specifically available at Stony Brook University for first-year students who are new to research?",
-        "How do international students' application requirements at Stony Brook University differ from domestic students?",
-        "If I'm a computer science major at Stony Brook University interested in AI research, what specific faculty, labs, research opportunities, and funding options are available?",
-        "What are all the costs associated with living on campus at Stony Brook (housing, meals, fees) and what financial aid options help cover them?",
-        "How does Stony Brook University's partnership with Brookhaven National Laboratory create opportunities for students, and in which departments?",
-        "What are all the important deadlines for a high school senior applying to Stony Brook University for Fall 2026 admission, including housing, financial aid, and special programs?",
         "What's Stony Brook University's current policy on standardized testing, and how does it affect different types of applicants?",
+        "Can graduate students live in first-year housing communities at Stony Brook University?",
+        "What is the housing deposit amount for undergraduate students at Stony Brook University?",
+        "What are the three first-year housing communities at Stony Brook University?",
+        "What options are available for students who missed the housing deposit deadline at Stony Brook University?",
         "How do room selection priorities work at Stony Brook University, and what happens if there's not enough space?",
         "What specific qualifications are needed for the Frances Velay Women and Science Research Fellowship at Stony Brook University?",
-        "What are the exact requirements for CSE 487 (Research in Computer Science) credits to count toward major requirements at Stony Brook University?",
-        "What is the mashgiach availability policy for Delancey Street Deli's kosher supervision at Stony Brook University?",
-        "I'm a prospective biology major at Stony Brook University interested in marine science and undergraduate research. Based on everything Stony Brook offers, what would be my best path through the university?",
-        "What should a student at Stony Brook University do if they're struggling academically and need support services? What resources are available?",
-        "I want to study abroad but also do research. How can I combine these goals at Stony Brook University?",
-        "Can graduate students live in first-year housing communities at Stony Brook University?",
-        "What are the admission requirements for the 'Super Scholars Program' at Stony Brook University?",
-        "How much does it cost to change your major at Stony Brook University?"
+        "What are the exact requirements for CSE 487 (Research in Computer Science) credits to count toward major requirements at Stony Brook University?"
     ]
 
     # Check API key
