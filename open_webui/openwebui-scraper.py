@@ -88,24 +88,35 @@ class RAGOptimizedScraper:
             response = self.rate_limited_request(sitemap_url)
             response.raise_for_status()
 
-            # Parse XML
-            root = ET.fromstring(response.content)
+            # Parse XML without namespace handling
+            content = response.text
+            # Remove namespace declarations for easier parsing
+            content = re.sub(r'xmlns[^=]*="[^"]*"', '', content)
+            content = re.sub(r'xmlns:[^=]*="[^"]*"', '', content)
 
-            # Handle different sitemap formats
+            root = ET.fromstring(content.encode('utf-8'))
+
             urls = []
 
             # Check if it's a sitemap index
-            if root.tag.endswith('sitemapindex'):
+            if 'sitemapindex' in root.tag:
                 # This is a sitemap index, fetch each sitemap
-                for sitemap in root.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}sitemap'):
-                    loc = sitemap.find('{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
-                    if loc is not None:
-                        sub_sitemap_url = loc.text
+                for sitemap in root.findall('.//sitemap'):
+                    loc = sitemap.find('./loc')
+                    if loc is not None and loc.text:
+                        sub_sitemap_url = loc.text.strip()
                         logger.info(f"Found sub-sitemap: {sub_sitemap_url}")
                         urls.extend(self.get_urls_from_sitemap(sub_sitemap_url))
             else:
                 # Regular sitemap
                 urls = self.get_urls_from_sitemap(sitemap_url)
+
+            # Since the sitemap shows openwebui.com URLs, let's check if we should use those
+            # or if there are actual docs.openwebui.com pages
+            if not any('docs.openwebui.com' in url for url in urls):
+                logger.info("Sitemap contains main site URLs. Checking docs subdomain...")
+                # Let's crawl from the docs homepage instead
+                return self.crawl_from_homepage()
 
             # Filter for documentation pages only
             doc_urls = [url for url in urls if self.is_doc_url(url)]
@@ -115,7 +126,54 @@ class RAGOptimizedScraper:
 
         except Exception as e:
             logger.error(f"Error fetching sitemap: {e}")
-            return []
+            logger.info("Falling back to homepage crawling...")
+            return self.crawl_from_homepage()
+
+    def crawl_from_homepage(self):
+        """Crawl URLs starting from the homepage"""
+        logger.info("Starting crawl from homepage...")
+        urls_to_process = [self.base_url]
+        found_urls = set()
+        processed = set()
+
+        while urls_to_process and len(found_urls) < 500:  # Limit to prevent infinite crawling
+            current_url = urls_to_process.pop(0)
+            if current_url in processed:
+                continue
+
+            processed.add(current_url)
+
+            try:
+                if not self.can_fetch(current_url):
+                    continue
+
+                response = self.rate_limited_request(current_url)
+                response.raise_for_status()
+
+                soup = BeautifulSoup(response.content, 'html.parser')
+
+                # Find all links
+                for link in soup.find_all('a', href=True):
+                    href = link['href']
+                    absolute_url = urljoin(current_url, href)
+                    parsed = urlparse(absolute_url)
+
+                    # Only follow links within the docs domain
+                    if parsed.netloc == self.domain:
+                        clean_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+                        if parsed.query:
+                            clean_url += f"?{parsed.query}"
+
+                        if clean_url not in found_urls and self.is_doc_url(clean_url):
+                            found_urls.add(clean_url)
+                            if clean_url not in processed:
+                                urls_to_process.append(clean_url)
+
+            except Exception as e:
+                logger.error(f"Error crawling {current_url}: {e}")
+
+        logger.info(f"Found {len(found_urls)} URLs through crawling")
+        return list(found_urls)
 
     def get_urls_from_sitemap(self, sitemap_url):
         """Extract URLs from a single sitemap"""
@@ -123,14 +181,25 @@ class RAGOptimizedScraper:
             response = self.rate_limited_request(sitemap_url)
             response.raise_for_status()
 
-            root = ET.fromstring(response.content)
+            # Remove namespaces for easier parsing
+            content = response.text
+            content = re.sub(r'xmlns[^=]*="[^"]*"', '', content)
+            content = re.sub(r'xmlns:[^=]*="[^"]*"', '', content)
+
+            root = ET.fromstring(content.encode('utf-8'))
             urls = []
 
-            # Extract all URLs
-            for url in root.findall('.//{http://www.sitemaps.org/schemas/sitemap/0.9}url'):
-                loc = url.find('{http://www.sitemaps.org/schemas/sitemap/0.9}loc')
-                if loc is not None:
-                    urls.append(loc.text)
+            # Find all URL elements
+            for url_elem in root.findall('.//url'):
+                loc_elem = url_elem.find('./loc')
+                if loc_elem is not None and loc_elem.text:
+                    urls.append(loc_elem.text.strip())
+
+            # If no urls found, try looking for loc tags directly
+            if not urls:
+                for loc_elem in root.findall('.//loc'):
+                    if loc_elem.text:
+                        urls.append(loc_elem.text.strip())
 
             return urls
 
@@ -141,13 +210,18 @@ class RAGOptimizedScraper:
     def is_doc_url(self, url):
         """Check if URL is a documentation page"""
         # Skip non-HTML resources
-        skip_extensions = ['.xml', '.pdf', '.zip', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.json']
-        if any(url.endswith(ext) for ext in skip_extensions):
+        skip_extensions = ['.xml', '.pdf', '.zip', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.json', '.txt']
+        if any(url.lower().endswith(ext) for ext in skip_extensions):
             return False
 
-        # Only process URLs from the docs domain
+        # Skip certain patterns
+        skip_patterns = ['/blog/', '/tag/', '/tags/', '/archive/', '/authors/']
+        if any(pattern in url.lower() for pattern in skip_patterns):
+            return False
+
+        # Accept URLs from either docs.openwebui.com or openwebui.com
         parsed = urlparse(url)
-        return parsed.netloc == self.domain
+        return parsed.netloc in [self.domain, 'openwebui.com', 'www.openwebui.com']
 
     def clean_content_for_rag(self, soup):
         """Clean and prepare content optimized for RAG"""
@@ -190,9 +264,10 @@ class RAGOptimizedScraper:
             main_content = soup.body
 
         # Remove empty divs and clean up
-        for div in main_content.find_all(['div', 'span']):
-            if not div.get_text(strip=True):
-                div.decompose()
+        if main_content:
+            for div in main_content.find_all(['div', 'span']):
+                if not div.get_text(strip=True):
+                    div.decompose()
 
         return main_content
 
@@ -215,7 +290,7 @@ class RAGOptimizedScraper:
         markdown_text = re.sub(r'\n{3,}', '\n\n', markdown_text)
 
         # Remove any remaining HTML comments except our URL comment
-        markdown_text = re.sub(r'<!--(?!.*https://docs\.openwebui\.com).*?-->', '', markdown_text, flags=re.DOTALL)
+        markdown_text = re.sub(r'<!--(?!.*https://).*?-->', '', markdown_text, flags=re.DOTALL)
 
         return markdown_text.strip()
 
@@ -251,7 +326,7 @@ class RAGOptimizedScraper:
         if title:
             title_text = title.get_text(strip=True)
             # Remove common suffixes
-            title_text = re.sub(r'\s*[\||\-]\s*Open WebUI.*$', '', title_text)
+            title_text = re.sub(r'\s*[\||\-]\s*Open ?WebUI.*$', '', title_text, re.IGNORECASE)
             return title_text
 
         # Fallback to URL path
@@ -280,6 +355,10 @@ class RAGOptimizedScraper:
             # Clean the content for RAG
             clean_soup = self.clean_content_for_rag(soup)
 
+            if not clean_soup:
+                logger.warning(f"No content found for {url}")
+                return False
+
             # Convert to markdown with custom settings
             markdown_content = markdownify.markdownify(
                 str(clean_soup),
@@ -291,6 +370,10 @@ class RAGOptimizedScraper:
 
             # Post-process the markdown
             markdown_content = self.post_process_markdown(markdown_content)
+
+            if not markdown_content.strip():
+                logger.warning(f"Empty content after processing for {url}")
+                return False
 
             # Save to file
             filename = self.url_to_filename(url)
@@ -313,44 +396,19 @@ class RAGOptimizedScraper:
             logger.error(f"✗ Error scraping {url}: {str(e)}")
             return False
 
-    def create_index_file(self, scraped_files):
-        """Create an index file for better RAG navigation"""
-        index_path = os.path.join(self.output_dir, '_index.md')
-
-        with open(index_path, 'w', encoding='utf-8') as f:
-            f.write("# Open WebUI Documentation Index\n\n")
-            f.write("This index provides an overview of all documentation pages.\n\n")
-
-            # Group files by category (based on path)
-            categories = {}
-            for filepath in scraped_files:
-                parts = filepath.replace('.md', '').split('_')
-                category = parts[0] if len(parts) > 1 else 'General'
-                if category not in categories:
-                    categories[category] = []
-                categories[category].append(filepath)
-
-            # Write categories
-            for category, files in sorted(categories.items()):
-                f.write(f"\n## {category.title()}\n\n")
-                for file in sorted(files):
-                    # Create readable name
-                    name = file.replace('.md', '').replace('_', ' ').title()
-                    f.write(f"- {name}\n")
-
     def crawl(self):
-        """Start the crawling process using sitemap"""
+        """Start the crawling process"""
         logger.info("=" * 60)
         logger.info("Starting RAG-optimized crawl")
         logger.info(f"Base URL: {self.base_url}")
         logger.info(f"Output directory: {self.output_dir}")
         logger.info("=" * 60)
 
-        # Get all URLs from sitemap
+        # Get all URLs (either from sitemap or crawling)
         all_urls = self.get_sitemap_urls()
 
         if not all_urls:
-            logger.error("No URLs found in sitemap!")
+            logger.error("No URLs found!")
             return
 
         logger.info(f"Found {len(all_urls)} URLs to scrape")
@@ -383,11 +441,6 @@ class RAGOptimizedScraper:
                 total_processed = successful + failed
                 if total_processed % 10 == 0:
                     logger.info(f"Progress: {total_processed}/{len(all_urls)} pages processed")
-
-        # Create index file
-        if scraped_files:
-            self.create_index_file(scraped_files)
-            logger.info("Created index file: _index.md")
 
         # Final summary
         logger.info("=" * 60)
