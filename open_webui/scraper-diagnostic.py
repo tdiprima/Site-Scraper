@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 
+
 def diagnose_site(url):
     """Diagnostic tool to understand the site structure"""
     print(f"Diagnosing: {url}")
@@ -116,6 +117,7 @@ def diagnose_site(url):
         
     except Exception as e:
         print(f"Error: {e}")
+
 
 if __name__ == "__main__":
     diagnose_site("https://docs.openwebui.com/")
