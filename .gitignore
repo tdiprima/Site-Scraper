@@ -5,6 +5,8 @@ output_markdown/
 cleaned_markdown/
 stonybrook_content/
 scrape_forecast.txt
+scraper_env/
+openwebui_rag_docs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
