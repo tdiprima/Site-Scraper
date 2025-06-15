@@ -1,5 +1,4 @@
 #!/bin/bash
-# Ubuntu 24.04 compatible
 
 # File output setup
 date_str=$(date +"%Y-%m-%d")
@@ -8,6 +7,30 @@ outfile="system_check-$date_str.txt"
 # Fun banner
 echo "✨ SYSTEM CHECK INITIATED $(date '+%Y-%m-%d %H:%M') ✨" | tee "$outfile"
 echo "-----------------------------------------------" | tee -a "$outfile"
+
+# Hostname
+hostname=$(hostname)
+echo "🏷️ Hostname: $hostname" | tee -a "$outfile"
+
+# OS Version
+if [ -f /etc/os-release ]; then
+    os_name=$(grep '^PRETTY_NAME=' /etc/os-release | cut -d= -f2- | tr -d '"')
+    echo "🖥️ OS: $os_name" | tee -a "$outfile"
+else
+    echo "🖥️ OS: (info not found)" | tee -a "$outfile"
+fi
+
+# Kernel Version
+kernel=$(uname -r)
+echo "🧬 Kernel: $kernel" | tee -a "$outfile"
+
+# Uptime
+uptime=$(uptime -p)
+echo "⏳ Uptime: $uptime" | tee -a "$outfile"
+
+# Date & Time
+datetime=$(date)
+echo "📅 Date/Time: $datetime" | tee -a "$outfile"
 
 # CPU Cores
 cores=$(nproc --all)
@@ -37,3 +60,4 @@ echo "-----------------------------------------------" | tee -a "$outfile"
 echo "System check saved as $outfile 🚀" | tee -a "$outfile"
 
 exit 0
+
