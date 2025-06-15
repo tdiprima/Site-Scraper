@@ -1,6 +1,3 @@
-import re
-
-
 def chunk_text(text, chunk_size=1000, chunk_overlap=150):
     chunks = []
     start = 0
@@ -27,7 +24,7 @@ def show_chunk_samples(chunks, label, n=3):
 
 if __name__ == "__main__":
     # Insert scraped page text here
-    with open('openwebui_rag_docs/features_plugin_events.md', 'r', encoding='utf-8') as f:
+    with open('features_plugin_events.md', 'r', encoding='utf-8') as f:
         text = f.read()
 
     # Config 1: 1000/150

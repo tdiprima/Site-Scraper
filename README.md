@@ -1,13 +1,13 @@
 ## 🧠 Stony Brook Web Content Scraper
 
 <!-- Disco Theme (Animated) -->
-<a href="https://github.com/unclecode/crawl4ai">
+<!-- <a href="https://github.com/unclecode/crawl4ai">
   <img src="https://raw.githubusercontent.com/unclecode/crawl4ai/main/docs/assets/powered-by-disco.svg" alt="Powered by Crawl4AI" width="200"/>
-</a>
+</a> -->
 
 Here's a single Python script (`run_full_pipeline.py`) that'll:
 
-1. **Run** the scraper and generate Markdown in an output dir.
+1. **Run** the scraper and generate BMI Markdown in an output dir.
 2. **Create a new `cleaned_markdown` dir** and process all `.md` files, stripping links/images and saving cleaned files there.
 3. **Run header/footer cleanup** on all files in the `cleaned_markdown` dir.
 
@@ -31,11 +31,11 @@ You get a nice, repeatable pipeline with clean separation at each stage. **No ma
 
 ---
 
-Here's a Python script using Crawl4AI to crawl the Stony Brook University website, extracting main content while respecting the specified requirements: `stonybrook_scraper.py`
+Here's a Python script to crawl the Stony Brook University website, extracting main content while respecting the specified requirements: `stonybrook_scraper.py`
 
 This script:
 
-1. Uses Crawl4AI to crawl starting from https://www.stonybrook.edu/
+1. Crawl starting from https://www.stonybrook.edu/
 2. Respects robots.txt when available
 3. Ignores specified file extensions
 4. Removes headers, footers, and navigation elements
@@ -47,7 +47,7 @@ This script:
 Make sure to install required packages:
 
 ```bash
-pip install crawl4ai beautifulsoup4
+pip install beautifulsoup4
 ```
 
 The script will create a directory called "stonybrook_content" with markdown files containing the cleaned main content from each page. Each file is named based on the URL's last segment and contains the page's main textual content without headers, footers, or navigation elements.
