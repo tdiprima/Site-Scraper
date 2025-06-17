@@ -381,7 +381,7 @@ class RAGOptimizedScraper:
 
             with open(filepath, 'w', encoding='utf-8') as f:
                 # Add URL as HTML comment for reference
-                f.write(f"<!-- {url} -->\n\n")
+                # f.write(f"<!-- {url} -->\n\n")  # NO!
 
                 # Add title as main header
                 f.write(f"# {title}\n\n")
