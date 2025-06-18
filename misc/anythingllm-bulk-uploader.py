@@ -64,36 +64,37 @@ class AnythingLLMUploader:
             '.md', '.html', '.xml', '.rtf', '.odt', '.xls', 
             '.xlsx', '.ppt', '.pptx'
         ]
-    
+
     def upload_document(self, file_path: str) -> Dict:
         """
         Upload a single document to AnythingLLM
-        
+
         Args:
             file_path: Path to the document
-            
+
         Returns:
             Response from the API
         """
         try:
             with open(file_path, 'rb') as file:
                 files = {'file': (os.path.basename(file_path), file)}
-                
+
                 response = requests.post(
                     f"{self.base_url}/api/v1/document/upload",
                     headers=self.headers,
                     files=files,
                     timeout=30
                 )
-                
+
                 if response.status_code == 200:
                     return response.json()
                 else:
                     logging.error(f"Upload failed for {file_path}: {response.status_code} - {response.text}")
-                    return {"error": response.text, "status_code": response.status_code}
-                    
+                    return {"error": f"Status {response.status_code}: {response.text}",
+                            "status_code": response.status_code}
+
         except Exception as e:
-            logging.error(f"Exception uploading {file_path}: {e}")
+            logging.error(f"Exception uploading {file_path}: {str(e)}")
             return {"error": str(e)}
     
     def embed_document(self, document_id: str, workspace_slug: str) -> Dict:
