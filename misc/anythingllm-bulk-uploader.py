@@ -172,7 +172,6 @@ class AnythingLLMUploader:
         Returns:
             Summary of the upload process
         """
-        # Get all files
         files = self.get_all_files(directory_path)
         total_files = len(files)
 
@@ -181,28 +180,23 @@ class AnythingLLMUploader:
         if total_files == 0:
             return {"error": "No supported files found"}
 
-        # Initialize counters
         successful_uploads = 0
         failed_uploads = 0
         successful_embeds = 0
         failed_embeds = 0
 
-        # Process files in batches
         for batch_start in range(0, total_files, batch_size):
             batch_end = min(batch_start + batch_size, total_files)
             batch_files = files[batch_start:batch_end]
 
             logging.info(f"Processing batch {batch_start // batch_size + 1}: files {batch_start + 1} to {batch_end}")
 
-            # Upload files in parallel
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Submit upload tasks
                 upload_futures = {
                     executor.submit(self.upload_document, file_path): file_path
                     for file_path in batch_files
                 }
 
-                # Process upload results and submit embedding tasks
                 embed_futures = {}
 
                 for future in as_completed(upload_futures):
@@ -211,12 +205,10 @@ class AnythingLLMUploader:
                     try:
                         result = future.result()
 
-                        # Check if upload was successful based on 'success' field
-                        if result.get("success", False) and "error" not in result or result.get("error") is None:
+                        if result.get("success", False):
                             successful_uploads += 1
                             logging.info(f"Successfully uploaded: {file_path}")
 
-                            # Submit embedding task if upload was successful
                             if "documents" in result and result["documents"] and "id" in result["documents"][0]:
                                 document_id = result["documents"][0]["id"]
                                 embed_future = executor.submit(
@@ -233,14 +225,13 @@ class AnythingLLMUploader:
                         failed_uploads += 1
                         logging.error(f"Exception processing upload for {file_path}: {e}")
 
-                # Process embedding results
                 for future in as_completed(embed_futures):
                     document_id = embed_futures[future]
 
                     try:
                         result = future.result()
 
-                        if result.get("success", False) and "error" not in result or result.get("error") is None:
+                        if result.get("success", False):
                             successful_embeds += 1
                             logging.info(f"Successfully embedded document: {document_id}")
                         else:
@@ -252,12 +243,10 @@ class AnythingLLMUploader:
                         failed_embeds += 1
                         logging.error(f"Exception embedding document {document_id}: {e}")
 
-            # Add delay between batches to avoid overwhelming the server
             if batch_end < total_files:
                 logging.info(f"Waiting {delay_between_batches} seconds before next batch...")
                 time.sleep(delay_between_batches)
 
-        # Return summary
         summary = {
             "total_files": total_files,
             "successful_uploads": successful_uploads,
