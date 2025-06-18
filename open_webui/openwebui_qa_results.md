@@ -174,29 +174,36 @@ A: Watchtower is a powerful tool that allows you to automatically update your co
 **Step 1: Install Watchtower**
 
 If you haven't already, install Watchtower using the following command:
+
 ```bash
 docker run -d \
   --name=watchtower \
   -v /var/run/docker.sock:/var/run/docker.sock \
   containous/watchtower
 ```
+
 This will start a container that monitors your Docker instances for updates.
 
 **Step 2: Configure Watchtower**
 
 By default, Watchtower uses the `containous` image. You need to configure it to use the Open WebUI repository and tag. Update the `WATCHTOWER_LABELS` environment variable with the label you used when running the Open WebUI container:
+
 ```bash
 docker exec -it watchtower /bin/bash
 ```
+
 Then, update the `WATCHTOWER_LABELS` variable:
+
 ```bash
 export WATCHTOWER_LABELS="com.centurylink.cloud/app-name=open-webui,com.centurylink.cloud/app-version=0.9.5"
 ```
+
 Replace `open-webui` and `0.9.5` with your actual Open WebUI image name and version.
 
 **Step 3: Restart the Watchtower container**
 
 Restart the Watchtower container to apply the configuration changes:
+
 ```bash
 docker restart watchtower
 ```
@@ -204,10 +211,12 @@ docker restart watchtower
 **Step 4: Verify updates**
 
 Watchtower will now automatically update your Open WebUI container when a new version is available. You can verify this by checking the Watchtower logs or running the following command:
+
 ```bash
 docker exec -it watchtower /bin/bash
 watchtower --list
 ```
+
 This should list all containers that are being monitored for updates, including your Open WebUI container.
 
 **Additional tips**
@@ -233,9 +242,11 @@ Specifically, it mentions that Python 3.7 is the minimum required version, but a
 So, if you want to ensure a smooth installation and take advantage of all the features offered by Open WebUI, please use Python 3.7 or later when installing using pip.
 
 Example:
+
 ```bash
 pip3 install open-webui
 ```
+
 Please note that you need to have pip3 (Python 3's package manager) installed on your system. If you're not sure which version of Python is installed on your system, you can check by running `python --version` and/or `pip --version`.
 
 Model: llama3.1:latest
@@ -333,4 +344,3 @@ Model: llama3.1:latest
 Timestamp: 2025-06-18T13:59:08.335900
 
 --------------------------------------------------------------------------------
-
