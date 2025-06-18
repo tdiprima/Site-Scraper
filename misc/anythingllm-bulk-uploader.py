@@ -129,32 +129,24 @@ class AnythingLLMUploader:
         except Exception as e:
             logging.error(f"Exception embedding document {document_id}: {e}")
             return {"error": str(e)}
-    
+
     def get_all_files(self, directory_path: str, recursive: bool = True) -> List[str]:
-        """
-        Get all supported files from a directory
-        
-        Args:
-            directory_path: Path to the directory
-            recursive: Whether to search recursively
-            
-        Returns:
-            List of file paths
-        """
         supported_extensions = self.get_supported_extensions()
         files = []
-        
         if recursive:
             for root, dirs, filenames in os.walk(directory_path):
                 for filename in filenames:
-                    if any(filename.lower().endswith(ext) for ext in supported_extensions):
-                        files.append(os.path.join(root, filename))
+                    file_path = os.path.join(root, filename)
+                    if any(filename.lower().endswith(ext) for ext in supported_extensions) and os.path.getsize(
+                            file_path) > 0:
+                        files.append(file_path)
         else:
             for filename in os.listdir(directory_path):
                 file_path = os.path.join(directory_path, filename)
-                if os.path.isfile(file_path) and any(filename.lower().endswith(ext) for ext in supported_extensions):
+                if os.path.isfile(file_path) and any(
+                        filename.lower().endswith(ext) for ext in supported_extensions) and os.path.getsize(
+                        file_path) > 0:
                     files.append(file_path)
-        
         return files
     
     def bulk_upload(self, directory_path: str, workspace_slug: str, 
