@@ -24,6 +24,7 @@ logging.basicConfig(
     ]
 )
 
+
 class AnythingLLMUploader:
     """
     A class to handle bulk document uploads to AnythingLLM
@@ -154,105 +155,108 @@ class AnythingLLMUploader:
                         file_path) > 0:
                     files.append(file_path)
         return files
-    
-    def bulk_upload(self, directory_path: str, workspace_slug: str, 
-                   max_workers: int = 5, batch_size: int = 100,
-                   delay_between_batches: float = 1.0) -> Dict:
+
+    def bulk_upload(self, directory_path: str, workspace_slug: str,
+                    max_workers: int = 5, batch_size: int = 100,
+                    delay_between_batches: float = 1.0) -> Dict:
         """
         Bulk upload documents from a directory to a workspace
-        
+
         Args:
             directory_path: Path to directory containing documents
             workspace_slug: The workspace to upload to
             max_workers: Maximum number of concurrent uploads
             batch_size: Number of files to process in each batch
             delay_between_batches: Delay in seconds between batches
-            
+
         Returns:
             Summary of the upload process
         """
         # Get all files
         files = self.get_all_files(directory_path)
         total_files = len(files)
-        
+
         logging.info(f"Found {total_files} supported files to upload")
-        
+
         if total_files == 0:
             return {"error": "No supported files found"}
-        
+
         # Initialize counters
         successful_uploads = 0
         failed_uploads = 0
         successful_embeds = 0
         failed_embeds = 0
-        
+
         # Process files in batches
         for batch_start in range(0, total_files, batch_size):
             batch_end = min(batch_start + batch_size, total_files)
             batch_files = files[batch_start:batch_end]
-            
-            logging.info(f"Processing batch {batch_start//batch_size + 1}: files {batch_start + 1} to {batch_end}")
-            
+
+            logging.info(f"Processing batch {batch_start // batch_size + 1}: files {batch_start + 1} to {batch_end}")
+
             # Upload files in parallel
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 # Submit upload tasks
                 upload_futures = {
-                    executor.submit(self.upload_document, file_path): file_path 
+                    executor.submit(self.upload_document, file_path): file_path
                     for file_path in batch_files
                 }
-                
+
                 # Process upload results and submit embedding tasks
                 embed_futures = {}
-                
+
                 for future in as_completed(upload_futures):
                     file_path = upload_futures[future]
-                    
+
                     try:
                         result = future.result()
-                        
-                        if "error" not in result:
+
+                        # Check if upload was successful based on 'success' field
+                        if result.get("success", False) and "error" not in result or result.get("error") is None:
                             successful_uploads += 1
                             logging.info(f"Successfully uploaded: {file_path}")
-                            
+
                             # Submit embedding task if upload was successful
-                            if "id" in result:
+                            if "documents" in result and result["documents"] and "id" in result["documents"][0]:
+                                document_id = result["documents"][0]["id"]
                                 embed_future = executor.submit(
-                                    self.embed_document, 
-                                    result["id"], 
+                                    self.embed_document,
+                                    document_id,
                                     workspace_slug
                                 )
-                                embed_futures[embed_future] = result["id"]
+                                embed_futures[embed_future] = document_id
                         else:
                             failed_uploads += 1
-                            logging.error(f"Failed to upload: {file_path}")
-                            
+                            logging.error(f"Failed to upload: {file_path}: {result.get('error', 'Unknown error')}")
+
                     except Exception as e:
                         failed_uploads += 1
                         logging.error(f"Exception processing upload for {file_path}: {e}")
-                
+
                 # Process embedding results
                 for future in as_completed(embed_futures):
                     document_id = embed_futures[future]
-                    
+
                     try:
                         result = future.result()
-                        
-                        if "error" not in result:
+
+                        if result.get("success", False) and "error" not in result or result.get("error") is None:
                             successful_embeds += 1
                             logging.info(f"Successfully embedded document: {document_id}")
                         else:
                             failed_embeds += 1
-                            logging.error(f"Failed to embed document: {document_id}")
-                            
+                            logging.error(
+                                f"Failed to embed document: {document_id}: {result.get('error', 'Unknown error')}")
+
                     except Exception as e:
                         failed_embeds += 1
                         logging.error(f"Exception embedding document {document_id}: {e}")
-            
+
             # Add delay between batches to avoid overwhelming the server
             if batch_end < total_files:
                 logging.info(f"Waiting {delay_between_batches} seconds before next batch...")
                 time.sleep(delay_between_batches)
-        
+
         # Return summary
         summary = {
             "total_files": total_files,
@@ -262,9 +266,10 @@ class AnythingLLMUploader:
             "failed_embeds": failed_embeds,
             "status": "completed"
         }
-        
+
         logging.info(f"Upload Summary: {json.dumps(summary, indent=2)}")
         return summary
+
 
 def main():
     """Main function to run the uploader"""
@@ -298,6 +303,7 @@ def main():
     )
     
     print(json.dumps(result, indent=2))
+
 
 if __name__ == "__main__":
     main()
