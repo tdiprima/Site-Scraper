@@ -78,6 +78,7 @@ class AnythingLLMUploader:
         try:
             with open(file_path, 'rb') as file:
                 files = {'file': (os.path.basename(file_path), file)}
+                logging.info(f"Attempting to upload: {file_path}")
 
                 response = requests.post(
                     f"{self.base_url}/api/v1/document/upload",
@@ -87,15 +88,20 @@ class AnythingLLMUploader:
                 )
 
                 if response.status_code == 200:
+                    logging.info(f"Upload successful for {file_path}: {response.text}")
                     return response.json()
                 else:
-                    logging.error(f"Upload failed for {file_path}: {response.status_code} - {response.text}")
+                    logging.error(
+                        f"Upload failed for {file_path}: Status {response.status_code} - Response: {response.text}")
                     return {"error": f"Status {response.status_code}: {response.text}",
                             "status_code": response.status_code}
 
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Network error uploading {file_path}: {str(e)}")
+            return {"error": f"Network error: {str(e)}"}
         except Exception as e:
-            logging.error(f"Exception uploading {file_path}: {str(e)}")
-            return {"error": str(e)}
+            logging.error(f"Unexpected error uploading {file_path}: {str(e)}")
+            return {"error": f"Unexpected error: {str(e)}"}
     
     def embed_document(self, document_id: str, workspace_slug: str) -> Dict:
         """
