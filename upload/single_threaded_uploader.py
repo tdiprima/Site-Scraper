@@ -29,6 +29,7 @@ MIN_FILE_SIZE_BYTES = 10  # Skip files smaller than this (in bytes)
 
 # Performance settings for single-threaded operation
 DELAY_BETWEEN_UPLOADS = 0.1  # Seconds to wait between each upload (prevents overwhelming server)
+DELAY_BEFORE_COLLECTION_ADD = 2.0  # Seconds to wait between upload and collection add (increased!
 BATCH_SIZE = 100  # Save progress every N files
 RESUME_FROM_FILE = "upload_progress.json"  # File to track progress for resuming
 SKIP_COLLECTION_ADD = False  # Set to True to skip adding files to collection
@@ -59,6 +60,7 @@ class SingleThreadedUploader:
         self.min_file_size = MIN_FILE_SIZE_BYTES
         self.skip_collection_add = SKIP_COLLECTION_ADD
         self.delay_between_uploads = DELAY_BETWEEN_UPLOADS
+        self.delay_before_collection = DELAY_BEFORE_COLLECTION_ADD
         
         self.headers = {
             'Authorization': f'Bearer {self.api_key}'
@@ -198,8 +200,8 @@ class SingleThreadedUploader:
                 # Add to collection if requested
                 collection_success = True
                 if not self.skip_collection_add and self.collection_id and file_id:
-                    # Small delay before collection operation
-                    time.sleep(0.2)
+                    # Wait before collection operation
+                    time.sleep(self.delay_before_collection)
                     
                     add_data = {'file_id': file_id}
                     add_response = self.session.post(
@@ -249,6 +251,7 @@ class SingleThreadedUploader:
         
         logger.info(f"Starting single-threaded upload of {len(remaining_files)} files")
         logger.info(f"Delay between uploads: {self.delay_between_uploads} seconds")
+        logger.info(f"Delay before collection add: {self.delay_before_collection} seconds")
         
         for i, file_path in enumerate(remaining_files):
             try:
@@ -364,6 +367,7 @@ def main():
     logger.info(f"  Max file size: {MAX_FILE_SIZE_MB} MB")
     logger.info(f"  Min file size: {MIN_FILE_SIZE_BYTES} bytes")
     logger.info(f"  Delay between uploads: {DELAY_BETWEEN_UPLOADS} seconds")
+    logger.info(f"  Delay before collection add: {DELAY_BEFORE_COLLECTION_ADD} seconds")
     logger.info(f"  Batch save interval: {BATCH_SIZE} files")
     
     # Get file list

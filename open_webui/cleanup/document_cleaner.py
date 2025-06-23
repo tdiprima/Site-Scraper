@@ -17,6 +17,7 @@ import unicodedata
 from pathlib import Path
 from datetime import datetime
 
+
 def clean_text_content(content):
     """Clean problematic characters from text content"""
     fixes_applied = []
@@ -39,10 +40,9 @@ def clean_text_content(content):
     
     # Replace smart quotes with regular quotes
     smart_quote_replacements = {
-        '"': '"',  # Left double quotation mark
-        '"': '"',  # Right double quotation mark
-        ''': "'",  # Left single quotation mark
-        ''': "'",  # Right single quotation mark
+        '“': '"',  # Left double quotation mark
+        '”': '"',  # Right double quotation mark
+        '’': "'",  # Single quotation mark
     }
     
     for smart, regular in smart_quote_replacements.items():
@@ -67,9 +67,31 @@ def clean_text_content(content):
             if not any("special characters" in fix for fix in fixes_applied):
                 fixes_applied.append("Replaced special characters")
     
-    # Fix potential JSON-breaking characters by escaping them properly
-    # Note: We're being conservative here - only fixing obvious issues
-    # Most JSON issues will be resolved by the encoding fixes above
+    # Remove emojis and other symbols
+    emoji_removed = False
+    cleaned_content = ""
+    for char in content:
+        # Check if character is an emoji or symbol
+        cat = unicodedata.category(char)
+        if cat in ['So', 'Sk', 'Sm']:  # Symbol other, Symbol modifier, Symbol math
+            # Additional check for common emoji ranges
+            code_point = ord(char)
+            if (0x1F600 <= code_point <= 0x1F64F or  # Emoticons
+                0x1F300 <= code_point <= 0x1F5FF or  # Misc Symbols and Pictographs
+                0x1F680 <= code_point <= 0x1F6FF or  # Transport and Map
+                0x1F1E0 <= code_point <= 0x1F1FF or  # Regional indicators (flags)
+                0x2600 <= code_point <= 0x26FF or    # Misc symbols
+                0x2700 <= code_point <= 0x27BF or    # Dingbats
+                0xFE00 <= code_point <= 0xFE0F or    # Variation selectors
+                0x1F900 <= code_point <= 0x1F9FF or  # Supplemental Symbols
+                0x1FA70 <= code_point <= 0x1FAFF):   # Symbols and Pictographs Extended-A
+                emoji_removed = True
+                continue
+        cleaned_content += char
+    
+    content = cleaned_content
+    if emoji_removed:
+        fixes_applied.append("Removed emojis and symbols")
     
     # Normalize line endings to Unix style
     if '\r\n' in content:
@@ -83,6 +105,7 @@ def clean_text_content(content):
             fixes_applied.append("Fixed line endings")
     
     return content, fixes_applied
+
 
 def clean_document(file_path, backup_dir=None):
     """Clean a single document and return results"""
@@ -139,6 +162,7 @@ def clean_document(file_path, backup_dir=None):
         results['error'] = str(e)
     
     return results
+
 
 def main():
     if len(sys.argv) < 2:
@@ -248,6 +272,7 @@ def main():
     else:
         print(f"\n🎉 All files successfully cleaned!")
         print("Your documents should now work better with Open WebUI's knowledge collection.")
+
 
 if __name__ == "__main__":
     main()
