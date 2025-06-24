@@ -5,16 +5,17 @@ Optimized for servers that can't handle concurrent uploads
 Increasing the time doesn't stop the "Collection failed" errors
 """
 
+import json
+import logging
+import mimetypes
 import os
 import sys
-import json
 import time
-import logging
-import requests
-import mimetypes
-from pathlib import Path
-from typing import List, Dict, Tuple, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import List, Tuple, Optional
+
+import requests
 
 # ============================================
 # CONFIGURATION - MODIFY THESE VALUES
