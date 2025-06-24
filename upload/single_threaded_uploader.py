@@ -2,6 +2,7 @@
 """
 Open WebUI Single-Threaded Bulk File Uploader
 Optimized for servers that can't handle concurrent uploads
+Increasing the time doesn't stop the "Collection failed" errors
 """
 
 import os
@@ -28,8 +29,8 @@ MAX_FILE_SIZE_MB = 100  # Skip files larger than this (in MB)
 MIN_FILE_SIZE_BYTES = 10  # Skip files smaller than this (in bytes)
 
 # Performance settings for single-threaded operation
-DELAY_BETWEEN_UPLOADS = 0.1  # Seconds to wait between each upload (prevents overwhelming server)
-DELAY_BEFORE_COLLECTION_ADD = 2.0  # Seconds to wait between upload and collection add (increased!
+DELAY_BETWEEN_UPLOADS = 0.5  # Seconds to wait between each upload (prevents overwhelming server)
+DELAY_BEFORE_COLLECTION_ADD = 0.5  # Seconds to wait between upload and collection add (If that works, you could go lower (0.2-0.3 seconds))
 BATCH_SIZE = 100  # Save progress every N files
 RESUME_FROM_FILE = "upload_progress.json"  # File to track progress for resuming
 SKIP_COLLECTION_ADD = False  # Set to True to skip adding files to collection
