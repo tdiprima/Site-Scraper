@@ -56,4 +56,20 @@
 * What are the penalties for unauthorized parking in a reserved lot? If you don't know the answer, then say so.
 * Which undergraduate majors at Stony Brook offer a combined BS/MS track? If you don't know the answer, then say so.
 
+---
+
+**Group 5:**
+
+* Compare the meal plan options at Stony Brook University – what's included in Wolfie Deluxe vs. Wolfie Unlimited?
+* What are all the requirements and steps to apply for the URECA Summer Research Program at Stony Brook University?
+* What's the complete process for a continuing student at Stony Brook to select housing for next year?
+* What's Stony Brook University's current policy on standardized testing, and how does it affect different types of applicants?
+* Can graduate students live in first-year housing communities at Stony Brook University?
+* What is the housing deposit amount for undergraduate students at Stony Brook University?
+* What are the three first-year housing communities at Stony Brook University?
+* What options are available for students who missed the housing deposit deadline at Stony Brook University?
+* How do room selection priorities work at Stony Brook University, and what happens if there's not enough space?
+* What specific qualifications are needed for the Frances Velay Women and Science Research Fellowship at Stony Brook University?
+* What are the exact requirements for CSE 487 (Research in Computer Science) credits to count toward major requirements at Stony Brook University?
+
 <br>

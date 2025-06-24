@@ -1,9 +1,10 @@
-import requests
 import json
-import time
 import os
+import time
 from datetime import datetime
 from typing import List, Dict
+
+import requests
 
 
 class OpenWebUIClient:
@@ -165,23 +166,41 @@ def main():
     # Configuration
     BASE_URL = "http://localhost:3000"
     API_KEY = os.environ.get('OPENWEBUI_API_KEY', 'your-api-key-here')  # Uses env var if available
-    COLLECTION_ID = "3c0b5e64-0cde-44f5-b785-3ed5ad8af070"  # Your Stony Brook collection ID
+    COLLECTION_ID = "8e0100d8-4b18-4f9e-94e6-97217307f225"  # Your Stony Brook collection ID
     MODEL = "llama4:latest"  # Change this if you want to use a different model
     OUTPUT_FILE = "stonybrook_qa_results.json"
 
     # Your questions
     questions = [
-        "Compare the meal plan options at Stony Brook University - what's included in Wolfie Deluxe vs Wolfie Unlimited?",
-        "What are all the requirements and steps to apply for the URECA Summer Research Program at Stony Brook University?",
-        "What's the complete process for a continuing student at Stony Brook to select housing for next year?",
-        "What's Stony Brook University's current policy on standardized testing, and how does it affect different types of applicants?",
-        "Can graduate students live in first-year housing communities at Stony Brook University?",
-        "What is the housing deposit amount for undergraduate students at Stony Brook University?",
-        "What are the three first-year housing communities at Stony Brook University?",
-        "What options are available for students who missed the housing deposit deadline at Stony Brook University?",
-        "How do room selection priorities work at Stony Brook University, and what happens if there's not enough space?",
-        "What specific qualifications are needed for the Frances Velay Women and Science Research Fellowship at Stony Brook University?",
-        "What are the exact requirements for CSE 487 (Research in Computer Science) credits to count toward major requirements at Stony Brook University?"
+        # General Info
+        "What is the address of Stony Brook University?",
+        "What are the school colors of Stony Brook?",
+        "What is Stony Brook’s mascot?",
+        "What is the official website for Stony Brook University?",
+        "When was Stony Brook University founded?",
+
+        # Admissions / Academics
+        "How do I apply to Stony Brook University?",
+        "What is the application deadline for undergraduate admissions?",
+        "What majors does Stony Brook offer?",
+        "Does Stony Brook have a nursing program?",
+        "How do I request a campus tour?",
+
+        # Financial Aid / Tuition
+        "How much is tuition at Stony Brook for in-state students?",
+        "How do I apply for financial aid at Stony Brook?",
+        "What scholarships are available at Stony Brook University?",
+
+        # Campus Life / Housing
+        "Does Stony Brook have on-campus housing?",
+        "How do I apply for student housing at Stony Brook?",
+        "What dining options are available on campus?",
+
+        # Research & Medicine
+        "Is Stony Brook affiliated with a hospital?",
+        "What research institutes are part of Stony Brook University?",
+        "What is Stony Brook Medicine?",
+        "Is there a medical school at Stony Brook?"
     ]
 
     # Check API key
