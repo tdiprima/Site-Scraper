@@ -10,8 +10,9 @@ This repository contains a collection of scripts designed for scraping websites,
 
 ## Directory Structure
 - **bmi**: Contains scripts specific to the BMI domain.
-- **open_webui**: Includes scripts for interacting with the Open WebUI platform.
+- **open_webui**: Scraping and processing content from Open WebUI documentation.
 - **stonybrook**: Dedicated to scraping and processing content from Stony Brook University.
+- **tcia**: Scraping and processing content from The Cancer Imaging Archive.
 - **upload**: Scripts to manage the upload of processed content.
 - **misc**: Various utility scripts for checks and debugging.
 - **tutorial**: Educational materials for web scraping and threading concepts.
@@ -23,4 +24,3 @@ This repository contains a collection of scripts designed for scraping websites,
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
