@@ -7,6 +7,7 @@ Deletes files that contain the exact text "Oops! That's a 404..."
 import os
 from pathlib import Path
 
+
 def check_and_remove_404(file_path):
     """
     Check if a document contains 404 error text and remove it if so.
@@ -32,6 +33,7 @@ def check_and_remove_404(file_path):
         print(f"Error processing {file_path}: {e}")
         return False
 
+
 def main():
     directory_path = "/home/tdiprima/stonybrook_content"
     directory = Path(directory_path)
@@ -53,6 +55,7 @@ def main():
             removed_count += 1
     
     print(f"\nProcessing complete. {removed_count} files were removed.")
+
 
 if __name__ == '__main__':
     main()

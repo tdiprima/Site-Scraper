@@ -4,9 +4,9 @@ Script to remove unwanted header content from RAG documents.
 Removes content from HTML comment with source URL through "Search" at the end.
 """
 
-import os
 import re
 from pathlib import Path
+
 
 def clean_document(file_path):
     """
@@ -44,6 +44,7 @@ def clean_document(file_path):
         print(f"Error processing {file_path}: {e}")
         return False
 
+
 def main():
     directory_path = "/home/tdiprima/stonybrook_content"
     directory = Path(directory_path)
@@ -65,6 +66,7 @@ def main():
             modified_count += 1
     
     print(f"\nCleaning complete. {modified_count} files were modified.")
+
 
 if __name__ == '__main__':
     main()

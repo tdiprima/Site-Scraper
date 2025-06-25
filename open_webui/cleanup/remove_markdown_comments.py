@@ -1,3 +1,6 @@
+"""
+Removes HTML comment lines from the first line of markdown files
+"""
 import glob
 import os
 

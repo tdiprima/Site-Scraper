@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-Document Analysis Script for Open WebUI Knowledge Collection
-Analyzes documents for potential issues that could cause JSON parsing errors
+Analyzes documents for potential encoding, character, and formatting issues that could cause JSON parsing errors
 python document_analyzer.py /path/to/your/documents/folder
 """
 
 import os
 import sys
 import json
-import re
 from pathlib import Path
-from collections import defaultdict, Counter
 import unicodedata
 import chardet
+
 
 def detect_encoding(file_path):
     """Detect file encoding"""
@@ -23,6 +21,7 @@ def detect_encoding(file_path):
             return result['encoding'], result['confidence']
     except Exception as e:
         return None, 0
+
 
 def analyze_text_content(content, filename):
     """Analyze text content for potential issues"""
@@ -82,6 +81,7 @@ def analyze_text_content(content, filename):
     
     return issues
 
+
 def analyze_document(file_path):
     """Analyze a single document"""
     results = {
@@ -140,6 +140,7 @@ def analyze_document(file_path):
         results['issues'].append(f"Error analyzing file: {str(e)}")
     
     return results
+
 
 def main():
     if len(sys.argv) != 2:
@@ -216,6 +217,7 @@ def main():
         print(f"\nDetailed results saved to: {output_file}")
     except Exception as e:
         print(f"\nCould not save results file: {e}")
+
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Document Cleaning Script for Open WebUI Knowledge Collection
-Fixes encoding and character issues that cause JSON parsing errors
+Fixes encoding issues and cleans problematic characters (smart quotes, control characters, emojis, etc.) from documents
 
 # Clean all documents (with backup)
 python document_cleaner.py /path/to/your/documents/folder --backup

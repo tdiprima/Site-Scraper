@@ -7,6 +7,7 @@ Removes the entire experts search interface block.
 import re
 from pathlib import Path
 
+
 def clean_document(file_path):
     """
     Remove the Stony Brook Experts header content from a document.
@@ -51,6 +52,7 @@ def clean_document(file_path):
         print(f"Error processing {file_path}: {e}")
         return False
 
+
 def main():
     directory_path = "/home/tdiprima/stonybrook_content"
     directory = Path(directory_path)
@@ -72,6 +74,7 @@ def main():
             modified_count += 1
     
     print(f"\nCleaning complete. {modified_count} files were modified.")
+
 
 if __name__ == '__main__':
     main()
