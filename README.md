@@ -1,53 +1,26 @@
-## 🧠 Stony Brook Web Content Scraper
+# Site Scraper
 
-<!-- Disco Theme (Animated) -->
-<!-- <a href="https://github.com/unclecode/crawl4ai">
-  <img src="https://raw.githubusercontent.com/unclecode/crawl4ai/main/docs/assets/powered-by-disco.svg" alt="Powered by Crawl4AI" width="200"/>
-</a> -->
+## Overview
+This repository contains a collection of scripts designed for scraping websites, postprocessing the scraped data, and uploading the processed files to Open WebUI. It allows for efficient data collection and management from various web sources.
 
-Here's a single Python script (`run_full_pipeline.py`) that'll:
+## Features
+- **Web Scraping**: Scripts to crawl entire domains while respecting robots.txt and convert HTML pages into Markdown format.
+- **Postprocessing**: Tools to clean and format scraped data by removing unwanted elements such as headers, footers, and navigation bars.
+- **File Upload**: Automated scripts to upload processed files to Open WebUI and integrate them into a knowledge base.
 
-1. **Run** the scraper and generate BMI Markdown in an output dir.
-2. **Create a new `cleaned_markdown` dir** and process all `.md` files, stripping links/images and saving cleaned files there.
-3. **Run header/footer cleanup** on all files in the `cleaned_markdown` dir.
+## Directory Structure
+- **bmi**: Contains scripts specific to the BMI domain.
+- **open_webui**: Includes scripts for interacting with the Open WebUI platform.
+- **stonybrook**: Dedicated to scraping and processing content from Stony Brook University.
+- **upload**: Scripts to manage the upload of processed content.
+- **misc**: Various utility scripts for checks and debugging.
+- **tutorial**: Educational materials for web scraping and threading concepts.
 
-You get a nice, repeatable pipeline with clean separation at each stage. **No manual copying. No moving scripts around. One command.**
+## Getting Started
+1. **Installation**: Ensure you have Python and dependencies installed. Use requirements.txt if available.
+2. **Configuration**: Configure scripts with the necessary tokens and file paths as per your requirements.
+3. **Run**: Execute the scripts from the command line as needed. Refer to each script's inline documentation for specific instructions.
 
-## 📋 How to Use
+## License
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
-1. In your terminal, just run:
-
-   ```bash
-   python3 run_full_pipeline.py
-   ```
-
-2. Your **fully cleaned files** will show up in the `cleaned_markdown` directory.
-
-## 💡 Notes
-
-* This script doesn't care where you are, as long as all scripts are together.
-* It will **nuke old output/cleaned directories** each time for a clean run.
-* If you want to preserve your raw/cleaned files, just comment out or adjust the `shutil.rmtree` lines.
-
----
-
-Here's a Python script to crawl the Stony Brook University website, extracting main content while respecting the specified requirements: `stonybrook_scraper.py`
-
-This script:
-
-1. Crawl starting from https://www.stonybrook.edu/
-2. Respects robots.txt when available
-3. Ignores specified file extensions
-4. Removes headers, footers, and navigation elements
-5. Extracts main content using BeautifulSoup
-6. Saves content to markdown files in a "stonybrook_content" directory
-7. Limits crawling depth to avoid excessive scraping
-8. Creates clean markdown files without URLs in the content
-
-Make sure to install required packages:
-
-```bash
-pip install beautifulsoup4
-```
-
-The script will create a directory called "stonybrook_content" with markdown files containing the cleaned main content from each page. Each file is named based on the URL's last segment and contains the page's main textual content without headers, footers, or navigation elements.
