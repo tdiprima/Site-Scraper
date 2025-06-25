@@ -25,6 +25,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 class TCIACrawler:
     def __init__(self, base_url: str, max_workers: int = 16, max_depth: int = 3):
         self.base_url = base_url.rstrip('/')
@@ -281,6 +282,7 @@ class TCIACrawler:
         files = os.listdir(self.output_dir)
         logger.info(f"Created {len(files)} markdown files")
 
+
 def main():
     """Main function"""
     # Test connection first
@@ -311,6 +313,6 @@ def main():
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}", exc_info=True)
 
+
 if __name__ == "__main__":
     main()
-
