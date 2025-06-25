@@ -8,6 +8,7 @@ import re
 from collections import defaultdict, Counter
 from datetime import datetime
 
+
 def parse_log_file(log_content):
     """Parse log content and extract relevant information"""
     
@@ -80,6 +81,7 @@ def parse_log_file(log_content):
             results['skipped_special'].append(match.group(1))
     
     return results
+
 
 def analyze_failures(results):
     """Analyze and summarize failures"""
@@ -210,6 +212,7 @@ def analyze_failures(results):
         print(f"   Crawl duration: {duration:.1f} seconds")
         print(f"   Average speed: {pages_per_second:.2f} pages/second")
 
+
 def main():
     """Main function to analyze crawl results"""
     
@@ -257,6 +260,7 @@ def main():
                 print(f"\n   ⚠️  Very small files (<100 bytes): {len(empty_files)}")
                 for f in empty_files[:5]:
                     print(f"      - {f}")
+
 
 if __name__ == "__main__":
     main()
