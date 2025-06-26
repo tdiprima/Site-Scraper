@@ -1,0 +1,21 @@
+# Web scraping and HTML parsing
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+html5lib>=1.1
+
+# Markdown conversion
+markdownify>=0.11.6
+html2text>=2020.1.16
+
+# URL parsing and handling
+urllib3>=2.0.0
+
+# Selenium for JavaScript-rendered content
+selenium>=4.15.0
+
+# Vector database clients
+qdrant-client>=1.6.0
+
+# Scientific computing and arrays
+numpy>=1.24.0

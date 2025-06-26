@@ -18,9 +18,23 @@ This repository contains a collection of scripts designed for scraping websites,
 - **tutorial**: Educational materials for web scraping and threading concepts.
 
 ## Getting Started
-1. **Installation**: Ensure you have Python and dependencies installed. Use requirements.txt if available.
+1. **Installation**: Ensure you have Python and dependencies installed. Use requirements.txt.
 2. **Configuration**: Configure scripts with the necessary tokens and file paths as per your requirements.
 3. **Run**: Execute the scripts from the command line as needed. Refer to each script's inline documentation for specific instructions.
+
+To install these dependencies, you can run:
+
+```sh
+pip install -r requirements.txt
+```
+
+Or if you prefer to use a virtual environment (recommended):
+
+```sh
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
