@@ -51,6 +51,6 @@ Here's a breakdown of what TCIA (The Cancer Imaging Archive) is **doing well**, 
 6. **Live Tutorials or Webinars**. 
    Even quarterly Zoom-based intros to TCIA or how to use certain tools could go a long way for community engagement.
 
-###🌈 Overall Summary:
+### 🌈 Overall Summary:
 
 TCIA stands out as a comprehensive, well-maintained resource for cancer imaging research, particularly in terms of accessibility, metadata richness, ethical standards, and programmatic access. However, enhancing user onboarding, clearly defining missing features, and streamlining collaboration and data contributions can significantly amplify its usability and community engagement.
