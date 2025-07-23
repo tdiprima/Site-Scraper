@@ -1,10 +1,11 @@
 import requests
 import json
+import os
 
 # Configuration - UPDATE THESE
 BASE_URL = "http://localhost:3000"  # Your Open WebUI URL
-API_KEY = "OPENWEBUI_API_KEY"  # Your API key
-JWT_TOKEN = "JWT_TOKEN"
+API_KEY = os.environ.get("OPENWEBUI_API_KEY")  # Your API key
+JWT_TOKEN = os.environ.get("JWT_TOKEN")
 
 
 def test_connection():

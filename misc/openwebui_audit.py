@@ -1,9 +1,10 @@
 import requests
 from collections import defaultdict
+import os
 
 # TODO: Configuration
 BASE_URL = "http://localhost:3000"  # Your Open WebUI URL
-API_KEY = "OPENWEBUI_API_KEY"  # Replace with your actual API key
+API_KEY = os.environ.get("OPENWEBUI_API_KEY")  # Replace with your actual API key
 expected_docs = 133
 COLLECTION_ID = "2d823361-514e-4018-83ba-514c81b6fa98",  # Found in debug: "Open WebUI Docs"
 

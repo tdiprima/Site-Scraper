@@ -4,7 +4,7 @@ import time
 import requests
 
 # ========== CONFIG ==========
-token = "JWT_TOKEN" 
+token = os.environ.get("JWT_TOKEN")
 knowledge_id = "bbbc10f3-b733-4252-b9ea-a5cf85f30870" 
 directory_path = 'stonybrook_content'
 uploaded_file_ids_path = 'uploaded.txt'

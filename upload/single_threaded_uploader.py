@@ -21,7 +21,7 @@ import requests
 # CONFIGURATION - MODIFY THESE VALUES
 # ============================================
 BASE_URL = "http://localhost:3000"
-API_KEY = "OPENWEBUI_API_KEY"
+API_KEY = os.environ.get("OPENWEBUI_API_KEY")
 COLLECTION_ID = "50e625ca-8b4c-4606-95ce-6ee0d4547ac2"
 DIRECTORY_PATH = "stonybrook_content"  # Directory containing files to upload
 FILE_LIST_PATH = None  # Optional: Path to text file with file paths (set to None to use directory)
