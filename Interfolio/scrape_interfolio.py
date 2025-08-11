@@ -9,7 +9,7 @@ import re
 import time
 import hashlib
 from urllib.parse import urljoin, urlparse
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm.contrib.concurrent import thread_map
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -236,23 +236,25 @@ class InterfolioScraper:
         logger.info(f"Starting scrape of {self.base_url}")
         urls_to_scrape = [self.base_url]
         
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            while urls_to_scrape:
-                # Submit batch of URLs for scraping
-                futures = {executor.submit(self.scrape_page, url): url 
-                          for url in urls_to_scrape[:self.max_workers]}
-                urls_to_scrape = urls_to_scrape[self.max_workers:]
-                
-                # Process completed futures
-                for future in as_completed(futures):
-                    try:
-                        new_urls = future.result()
-                        # Add new URLs to queue
-                        for url in new_urls:
-                            if url not in self.visited_urls and url not in urls_to_scrape:
-                                urls_to_scrape.append(url)
-                    except Exception as e:
-                        logger.error(f"Error processing future: {e}")
+        while urls_to_scrape:
+            # Process current batch of URLs using thread_map
+            current_batch = urls_to_scrape[:self.max_workers]
+            urls_to_scrape = urls_to_scrape[self.max_workers:]
+            
+            # Scrape current batch with progress bar
+            batch_results = thread_map(
+                self.scrape_page, 
+                current_batch, 
+                max_workers=self.max_workers,
+                desc=f"Scraping batch ({len(self.visited_urls)} pages completed)"
+            )
+            
+            # Add new URLs to queue from batch results
+            for new_urls in batch_results:
+                if new_urls:  # scrape_page returns list of URLs or empty list
+                    for url in new_urls:
+                        if url not in self.visited_urls and url not in urls_to_scrape:
+                            urls_to_scrape.append(url)
         
         logger.info(f"Scraping complete. Scraped {len(self.visited_urls)} pages.")
         logger.info(f"Failed URLs: {len(self.failed_urls)}")

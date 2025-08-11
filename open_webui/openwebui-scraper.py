@@ -6,7 +6,7 @@ from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 import markdownify
 import xml.etree.ElementTree as ET
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from tqdm.contrib.concurrent import thread_map
 from threading import Lock
 import logging
 import re
@@ -413,34 +413,24 @@ class RAGOptimizedScraper:
 
         logger.info(f"Found {len(all_urls)} URLs to scrape")
 
-        # Process URLs with thread pool
-        successful = 0
-        failed = 0
+        # Process URLs with thread_map
+        results = thread_map(
+            self.scrape_page, 
+            all_urls, 
+            max_workers=self.max_workers,
+            desc="Scraping pages"
+        )
+        
+        # Count results
+        successful = sum(1 for result in results if result)
+        failed = len(results) - successful
+        
+        # Generate scraped files list
         scraped_files = []
-
-        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            # Submit all tasks
-            future_to_url = {executor.submit(self.scrape_page, url): url for url in all_urls}
-
-            # Process completed tasks
-            for future in as_completed(future_to_url):
-                url = future_to_url[future]
-                try:
-                    success = future.result()
-                    if success:
-                        successful += 1
-                        filename = self.url_to_filename(url)
-                        scraped_files.append(filename)
-                    else:
-                        failed += 1
-                except Exception as e:
-                    logger.error(f"Exception for {url}: {e}")
-                    failed += 1
-
-                # Progress update
-                total_processed = successful + failed
-                if total_processed % 10 == 0:
-                    logger.info(f"Progress: {total_processed}/{len(all_urls)} pages processed")
+        for i, result in enumerate(results):
+            if result:
+                filename = self.url_to_filename(all_urls[i])
+                scraped_files.append(filename)
 
         # Final summary
         logger.info("=" * 60)
