@@ -1,6 +1,3 @@
-"""
-Much better!
-"""
 import json
 import os
 import time
