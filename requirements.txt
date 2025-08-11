@@ -11,8 +11,9 @@ html2text>=2020.1.16
 # URL parsing and handling
 urllib3>=2.0.0
 
-# Selenium for JavaScript-rendered content
-selenium>=4.15.0
+# For JavaScript-rendered content
+requests_html>=0.10.0
+lxml_html_clean>=0.4.2
 
 # Vector database clients
 qdrant-client>=1.6.0
@@ -22,3 +23,6 @@ numpy>=1.24.0
 
 # Parallelize tasks
 tqdm>=4.67.1
+
+# Logging
+loguru>=0.7.3

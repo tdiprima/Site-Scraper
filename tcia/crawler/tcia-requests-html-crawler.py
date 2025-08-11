@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """
-Selenium-based web crawler for The Cancer Imaging Archive website
-Handles JavaScript-rendered content
+requests_html-based web crawler for The Cancer Imaging Archive website
+Handles JavaScript-rendered content using requests_html instead of selenium
 
-# Run in headless mode (no browser window)
-python tcia-selenium-crawler.py --headless
-
-# Or run with visible browser (for debugging)
-python tcia-selenium-crawler.py
+Usage:
+python tcia-requests-html-crawler.py
 """
 
 import os
@@ -15,27 +12,13 @@ import time
 import hashlib
 from urllib.parse import urljoin, urlparse
 from collections import deque
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import TimeoutException, WebDriverException
-from bs4 import BeautifulSoup
+from requests_html import HTMLSession
 import html2text
-import logging
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from loguru import logger
 
 
-class TCIASeleniumCrawler:
-    def __init__(self, base_url: str, max_depth: int = 3, headless: bool = True):
+class TCIARequestsHTMLCrawler:
+    def __init__(self, base_url: str, max_depth: int = 3):
         self.base_url = base_url.rstrip('/')
         self.domain = urlparse(base_url).netloc
         self.max_depth = max_depth
@@ -50,25 +33,11 @@ class TCIASeleniumCrawler:
             '.json', '.xml', '.csv'
         }
         
-        # Setup Chrome options
-        chrome_options = Options()
-        if headless:
-            chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-        
-        # Initialize driver
-        try:
-            self.driver = webdriver.Chrome(options=chrome_options)
-            logger.info("Chrome driver initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize Chrome driver: {e}")
-            logger.info("Make sure you have Chrome and ChromeDriver installed")
-            logger.info("Install with: sudo apt-get install chromium-chromedriver")
-            raise
+        # Initialize session
+        self.session = HTMLSession()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        })
         
         # Create output directory - DIFFERENT from original to protect existing files
         self.output_dir = 'tcia_dynamic_content_only'
@@ -85,11 +54,6 @@ class TCIASeleniumCrawler:
         
         # Track visited URLs
         self.visited = set()
-        
-    def __del__(self):
-        """Cleanup driver on exit"""
-        if hasattr(self, 'driver'):
-            self.driver.quit()
     
     def is_valid_url(self, url: str) -> bool:
         """Check if URL should be crawled"""
@@ -108,35 +72,6 @@ class TCIASeleniumCrawler:
             
         return True
     
-    def wait_for_content(self, timeout: int = 10):
-        """Wait for dynamic content to load"""
-        try:
-            # Wait for body to be present
-            WebDriverWait(self.driver, timeout).until(
-                EC.presence_of_element_located((By.TAG_NAME, "body"))
-            )
-            
-            # Additional wait for common content indicators
-            content_selectors = [
-                "main", "article", ".content", "#content", 
-                ".container", "[role='main']", ".page-content"
-            ]
-            
-            for selector in content_selectors:
-                try:
-                    WebDriverWait(self.driver, 2).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, selector))
-                    )
-                    break
-                except TimeoutException:
-                    continue
-            
-            # Give JavaScript a bit more time to finish
-            time.sleep(2)
-            
-        except TimeoutException:
-            logger.warning("Timeout waiting for content to load")
-    
     def check_if_dynamic_page(self, initial_html: str, final_html: str) -> bool:
         """Check if page content was loaded dynamically"""
         # Compare content length (dynamic pages usually have much more content after JS)
@@ -148,6 +83,7 @@ class TCIASeleniumCrawler:
             return True
             
         # Check for common signs of dynamic content
+        from bs4 import BeautifulSoup
         initial_soup = BeautifulSoup(initial_html, 'html.parser')
         final_soup = BeautifulSoup(final_html, 'html.parser')
         
@@ -158,9 +94,10 @@ class TCIASeleniumCrawler:
         # If content elements increased significantly, it's dynamic
         return final_content > initial_content * 1.3
     
-    def extract_main_content(self, page_source: str) -> str:
+    def extract_main_content(self, html_content: str) -> str:
         """Extract main content as text"""
-        soup = BeautifulSoup(page_source, 'html.parser')
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
         
         # Remove script, style, and navigation elements FIRST
         for tag in soup(['script', 'style', 'header', 'nav', 'footer', 'aside', 'noscript']):
@@ -204,7 +141,7 @@ class TCIASeleniumCrawler:
             # Convert to markdown
             return self.h2t.handle(str(main_content))
         else:
-            return "No content found (even with Selenium)"
+            return "No content found"
     
     def save_as_markdown(self, url: str, content: str) -> str:
         """Save content as markdown file"""
@@ -242,50 +179,41 @@ class TCIASeleniumCrawler:
         try:
             logger.info(f"Checking: {url}")
             
-            # First, get initial HTML without JavaScript
-            import requests
-            initial_response = requests.get(url, timeout=10)
-            initial_html = initial_response.text
+            # Get the page with requests_html
+            r = self.session.get(url, timeout=30)
+            initial_html = r.text
             
-            # Load page with Selenium
-            self.driver.get(url)
-            
-            # Wait for content to load
-            self.wait_for_content()
-            
-            # Get page source after JavaScript execution
-            final_html = self.driver.page_source
+            # Render JavaScript - this is equivalent to Selenium's wait for content
+            try:
+                r.html.render(timeout=20, wait=2, sleep=2)
+                final_html = r.html.html
+            except Exception as e:
+                logger.warning(f"JavaScript rendering failed for {url}: {e}")
+                final_html = initial_html
             
             # Check if this is a dynamic page
             if not self.check_if_dynamic_page(initial_html, final_html):
                 logger.info(f"Skipping {url} - not dynamically loaded")
                 # Still extract links for crawling
-                soup = BeautifulSoup(final_html, 'html.parser')
                 found_urls = set()
-                for link in soup.find_all('a', href=True):
-                    href = link['href']
-                    if not href.startswith(('javascript:', 'mailto:', 'tel:', '#')):
-                        absolute_url = urljoin(url, href).split('#')[0]
+                for link in r.html.links:
+                    if not link.startswith(('javascript:', 'mailto:', 'tel:', '#')):
+                        absolute_url = urljoin(url, link).split('#')[0]
                         if self.is_valid_url(absolute_url) and absolute_url not in self.visited:
                             found_urls.add(absolute_url)
                 return found_urls
             
             logger.info(f"Dynamic content detected - scraping: {url}")
             
-            # Parse HTML
-            soup = BeautifulSoup(final_html, 'html.parser')
-            
-            # Find all links
+            # Find all links using requests_html
             found_urls = set()
-            for link in soup.find_all('a', href=True):
-                href = link['href']
-                
+            for link in r.html.links:
                 # Skip non-http links
-                if href.startswith(('javascript:', 'mailto:', 'tel:', '#')):
+                if link.startswith(('javascript:', 'mailto:', 'tel:', '#')):
                     continue
                     
                 # Convert to absolute URL
-                absolute_url = urljoin(url, href)
+                absolute_url = urljoin(url, link)
                 absolute_url = absolute_url.split('#')[0]  # Remove fragments
                 
                 # Check if valid and not visited
@@ -305,9 +233,6 @@ class TCIASeleniumCrawler:
             
             return found_urls
             
-        except WebDriverException as e:
-            logger.error(f"WebDriver error scraping {url}: {e}")
-            return set()
         except Exception as e:
             logger.error(f"Error scraping {url}: {e}")
             return set()
@@ -358,22 +283,12 @@ class TCIASeleniumCrawler:
 
 def main():
     """Main function"""
-    logger.info("Starting TCIA Selenium crawler")
-    logger.info("This crawler handles JavaScript-rendered content")
+    logger.info("Starting TCIA requests_html crawler")
+    logger.info("This crawler handles JavaScript-rendered content using requests_html")
     
-    # Check if running in headless mode
-    import sys
-    headless = "--headless" not in sys.argv
-    
-    if not headless:
-        logger.info("Running in headless mode (no browser window)")
-    else:
-        logger.info("Running with visible browser window")
-    
-    crawler = TCIASeleniumCrawler(
+    crawler = TCIARequestsHTMLCrawler(
         base_url="https://www.cancerimagingarchive.net/",
-        max_depth=2,  # Start with depth 2
-        headless=headless
+        max_depth=2  # Start with depth 2
     )
     
     try:
@@ -382,10 +297,6 @@ def main():
         logger.info("Crawling interrupted by user")
     except Exception as e:
         logger.error(f"Error: {e}", exc_info=True)
-    finally:
-        # Ensure driver is closed
-        if hasattr(crawler, 'driver'):
-            crawler.driver.quit()
 
 
 if __name__ == "__main__":

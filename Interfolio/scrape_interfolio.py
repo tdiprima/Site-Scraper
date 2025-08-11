@@ -10,29 +10,15 @@ import time
 import hashlib
 from urllib.parse import urljoin, urlparse
 from tqdm.contrib.concurrent import thread_map
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from requests_html import HTMLSession
 from bs4 import BeautifulSoup
 import requests
 from markdownify import markdownify as md
-import logging
+from loguru import logger
 from datetime import datetime
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('scraper.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+# Configure loguru
+logger.add("scraper.log", rotation="10 MB", retention="10 days")
 
 
 class InterfolioScraper:
@@ -47,35 +33,25 @@ class InterfolioScraper:
         # Create output directory
         os.makedirs(self.output_dir, exist_ok=True)
         
-        # Chrome options for headless browsing
-        self.chrome_options = Options()
-        self.chrome_options.add_argument('--headless')
-        self.chrome_options.add_argument('--no-sandbox')
-        self.chrome_options.add_argument('--disable-dev-shm-usage')
-        self.chrome_options.add_argument('--disable-gpu')
-        self.chrome_options.add_argument('--window-size=1920,1080')
-        self.chrome_options.add_argument('--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36')
+        # HTML session for requests_html
+        self.session = HTMLSession()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        })
         
-    def get_driver(self):
-        """Create and return a new Chrome driver instance"""
-        try:
-            driver = webdriver.Chrome(options=self.chrome_options)
-            return driver
-        except Exception as e:
-            logger.error(f"Failed to create Chrome driver: {e}")
-            raise
+    def get_session(self):
+        """Return the HTML session instance"""
+        return self.session
     
-    def wait_for_content(self, driver, timeout=10):
-        """Wait for JavaScript content to load"""
+    def render_js_content(self, response, timeout=10):
+        """Render JavaScript content using requests_html"""
         try:
-            # Wait for common content containers
-            WebDriverWait(driver, timeout).until(
-                EC.presence_of_element_located((By.TAG_NAME, "article"))
-            )
+            # Render JavaScript content
+            response.html.render(timeout=timeout)
             # Additional wait for dynamic content
             time.sleep(2)
-        except TimeoutException:
-            logger.warning("Timeout waiting for content to load")
+        except Exception as e:
+            logger.warning(f"Failed to render JavaScript content: {e}")
     
     def extract_text_content(self, soup):
         """Extract text content from BeautifulSoup object, removing all links"""
@@ -177,22 +153,24 @@ class InterfolioScraper:
         logger.info(f"Scraping: {url}")
         self.visited_urls.add(url)
         
-        driver = None
         try:
-            driver = self.get_driver()
-            driver.get(url)
-            self.wait_for_content(driver)
+            # Get page using requests_html
+            response = self.session.get(url)
+            response.raise_for_status()
             
-            # Get page content
-            page_source = driver.page_source
-            soup = BeautifulSoup(page_source, 'html.parser')
+            # Render JavaScript if needed
+            self.render_js_content(response)
+            
+            # Get HTML content
+            html_content = response.html.html
+            soup = BeautifulSoup(html_content, 'html.parser')
             
             # Extract title
             title = soup.find('title')
             title_text = title.get_text() if title else "Untitled"
             
             # Convert to markdown
-            markdown_content = self.html_to_markdown(page_source)
+            markdown_content = self.html_to_markdown(html_content)
             
             if markdown_content:
                 # Save to file
@@ -200,7 +178,6 @@ class InterfolioScraper:
                 filepath = os.path.join(self.output_dir, filename)
                 
                 # Add metadata
-                # metadata = f"---\ntitle: {title_text}\nurl: {url}\nscraped_at: {datetime.now().isoformat()}\n---\n\n"
                 metadata = f"title: {title_text}\n\n"
 
                 with open(filepath, 'w', encoding='utf-8') as f:
@@ -227,9 +204,6 @@ class InterfolioScraper:
             logger.error(f"Error scraping {url}: {e}")
             self.failed_urls.add(url)
             return []
-        finally:
-            if driver:
-                driver.quit()
     
     def scrape_site(self):
         """Scrape the entire site starting from base URL"""
