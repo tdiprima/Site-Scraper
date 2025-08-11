@@ -19,3 +19,6 @@ qdrant-client>=1.6.0
 
 # Scientific computing and arrays
 numpy>=1.24.0
+
+# Parallelize tasks
+tqdm>=4.67.1
