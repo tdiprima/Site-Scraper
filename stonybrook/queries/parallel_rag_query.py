@@ -6,11 +6,11 @@ import os
 import time
 from datetime import datetime
 from typing import List, Dict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import multiprocessing
 from threading import Semaphore
 
 import requests
+from tqdm.contrib.concurrent import thread_map
 
 
 class OpenWebUIClient:
@@ -113,6 +113,19 @@ class OpenWebUIClient:
                     "processing_time": time.time() - start_time if 'start_time' in locals() else 0
                 }
 
+    def _process_single_question(self, args):
+        """
+        Helper function to process a single question (for use with thread_map)
+        
+        Args:
+            args: Tuple of (question, collection_id, model, question_index)
+            
+        Returns:
+            Result dictionary
+        """
+        question, collection_id, model, question_index = args
+        return self.ask_question(question, collection_id, model, question_index)
+
     def process_questions_parallel(self, questions: List[str], collection_id: str,
                                  output_file: str = "qa_results.json",
                                  model: str = "llama4:latest",
@@ -131,7 +144,6 @@ class OpenWebUIClient:
             # Use CPU count but cap it to avoid overwhelming the server
             max_workers = min(multiprocessing.cpu_count(), 16)
         
-        results = []
         total_questions = len(questions)
         
         print(f"Processing {total_questions} questions in parallel")
@@ -141,57 +153,21 @@ class OpenWebUIClient:
         print("-" * 80)
         
         start_time = time.time()
-        completed = 0
         
-        # Create a thread pool for parallel execution
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # Submit all tasks
-            future_to_question = {
-                executor.submit(
-                    self.ask_question, 
-                    question, 
-                    collection_id, 
-                    model,
-                    i
-                ): (i, question) 
-                for i, question in enumerate(questions)
-            }
-            
-            # Process completed tasks as they finish
-            for future in as_completed(future_to_question):
-                question_index, question = future_to_question[future]
-                
-                try:
-                    result = future.result()
-                    results.append(result)
-                    completed += 1
-                    
-                    # Print progress
-                    print(f"\n[{completed}/{total_questions}] Completed (Q{question_index + 1}):")
-                    print(f"Q: {question}")
-                    
-                    # Print the answer (truncated if too long)
-                    answer = result['answer']
-                    if len(answer) > 200:
-                        print(f"A: {answer[:200]}...")
-                    else:
-                        print(f"A: {answer}")
-                    print(f"Processing time: {result.get('processing_time', 0):.2f}s")
-                    
-                except Exception as e:
-                    print(f"\nError processing question {question_index + 1}: {e}")
-                    results.append({
-                        "question": questions[question_index],
-                        "answer": f"Error: {str(e)}",
-                        "model": model,
-                        "timestamp": datetime.now().isoformat(),
-                        "error": str(e),
-                        "index": question_index
-                    })
-                    completed += 1
+        # Prepare arguments for thread_map
+        args_list = [
+            (question, collection_id, model, i)
+            for i, question in enumerate(questions)
+        ]
         
-        # Sort results by original question order
-        results.sort(key=lambda x: x.get('index', 0))
+        # Use tqdm.contrib.concurrent.thread_map for parallel processing with progress bar
+        results = thread_map(
+            self._process_single_question,
+            args_list,
+            max_workers=max_workers,
+            desc="Processing questions",
+            unit="question"
+        )
         
         total_time = time.time() - start_time
         
