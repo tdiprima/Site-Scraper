@@ -1,5 +1,7 @@
 [From Zero to Fully Automated: My 48-Hour Playwright Challenge](https://medium.com/gitconnected/from-zero-to-fully-automated-my-48-hour-playwright-challenge-379996088063)
 
+Maria Ali shares her 48-hour journey automating repetitive web testing with Playwright (zero prior experience). She defined clear goals, set up Playwright quickly, handled login/navigation with smart selectors and waits (no brittle sleeps), added screenshots for debugging, structured JSON logs for analysis, and scheduled runs. **Result:** A reliable bot that logs in, runs workflows, captures data, and operates hands-free—proving focused automation can save tons of time. Highly recommends Playwright for testing drudgery.
+
 ```python
 # main.py
 # This script automates web testing using Playwright as described in the article.
