@@ -1,20 +1,20 @@
+import logging
 import os
+import re
 import time
-import requests
-from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
+from threading import Lock
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
+
 import markdownify
-import xml.etree.ElementTree as ET
+import requests
+from bs4 import BeautifulSoup
 from tqdm.contrib.concurrent import thread_map
-from threading import Lock
-import logging
-import re
 
 # Set up logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class RAGOptimizedScraper:
                 time.sleep(sleep_time)
 
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Compatible; DocsScraper/1.0; Educational Purpose)'
+                "User-Agent": "Mozilla/5.0 (Compatible; DocsScraper/1.0; Educational Purpose)"
             }
             response = requests.get(url, headers=headers, timeout=30)
             self.last_request_time = time.time()
@@ -81,7 +81,7 @@ class RAGOptimizedScraper:
 
     def get_sitemap_urls(self):
         """Parse sitemap.xml to get all URLs"""
-        sitemap_url = urljoin(self.base_url, '/sitemap.xml')
+        sitemap_url = urljoin(self.base_url, "/sitemap.xml")
         logger.info(f"Fetching sitemap from: {sitemap_url}")
 
         try:
@@ -91,18 +91,18 @@ class RAGOptimizedScraper:
             # Parse XML without namespace handling
             content = response.text
             # Remove namespace declarations for easier parsing
-            content = re.sub(r'xmlns[^=]*="[^"]*"', '', content)
-            content = re.sub(r'xmlns:[^=]*="[^"]*"', '', content)
+            content = re.sub(r'xmlns[^=]*="[^"]*"', "", content)
+            content = re.sub(r'xmlns:[^=]*="[^"]*"', "", content)
 
-            root = ET.fromstring(content.encode('utf-8'))
+            root = ET.fromstring(content.encode("utf-8"))
 
             urls = []
 
             # Check if it's a sitemap index
-            if 'sitemapindex' in root.tag:
+            if "sitemapindex" in root.tag:
                 # This is a sitemap index, fetch each sitemap
-                for sitemap in root.findall('.//sitemap'):
-                    loc = sitemap.find('./loc')
+                for sitemap in root.findall(".//sitemap"):
+                    loc = sitemap.find("./loc")
                     if loc is not None and loc.text:
                         sub_sitemap_url = loc.text.strip()
                         logger.info(f"Found sub-sitemap: {sub_sitemap_url}")
@@ -113,8 +113,10 @@ class RAGOptimizedScraper:
 
             # Since the sitemap shows openwebui.com URLs, let's check if we should use those
             # or if there are actual docs.openwebui.com pages
-            if not any('docs.openwebui.com' in url for url in urls):
-                logger.info("Sitemap contains main site URLs. Checking docs subdomain...")
+            if not any("docs.openwebui.com" in url for url in urls):
+                logger.info(
+                    "Sitemap contains main site URLs. Checking docs subdomain..."
+                )
                 # Let's crawl from the docs homepage instead
                 return self.crawl_from_homepage()
 
@@ -136,7 +138,9 @@ class RAGOptimizedScraper:
         found_urls = set()
         processed = set()
 
-        while urls_to_process and len(found_urls) < 500:  # Limit to prevent infinite crawling
+        while (
+            urls_to_process and len(found_urls) < 500
+        ):  # Limit to prevent infinite crawling
             current_url = urls_to_process.pop(0)
             if current_url in processed:
                 continue
@@ -150,11 +154,11 @@ class RAGOptimizedScraper:
                 response = self.rate_limited_request(current_url)
                 response.raise_for_status()
 
-                soup = BeautifulSoup(response.content, 'html.parser')
+                soup = BeautifulSoup(response.content, "html.parser")
 
                 # Find all links
-                for link in soup.find_all('a', href=True):
-                    href = link['href']
+                for link in soup.find_all("a", href=True):
+                    href = link["href"]
                     absolute_url = urljoin(current_url, href)
                     parsed = urlparse(absolute_url)
 
@@ -183,21 +187,21 @@ class RAGOptimizedScraper:
 
             # Remove namespaces for easier parsing
             content = response.text
-            content = re.sub(r'xmlns[^=]*="[^"]*"', '', content)
-            content = re.sub(r'xmlns:[^=]*="[^"]*"', '', content)
+            content = re.sub(r'xmlns[^=]*="[^"]*"', "", content)
+            content = re.sub(r'xmlns:[^=]*="[^"]*"', "", content)
 
-            root = ET.fromstring(content.encode('utf-8'))
+            root = ET.fromstring(content.encode("utf-8"))
             urls = []
 
             # Find all URL elements
-            for url_elem in root.findall('.//url'):
-                loc_elem = url_elem.find('./loc')
+            for url_elem in root.findall(".//url"):
+                loc_elem = url_elem.find("./loc")
                 if loc_elem is not None and loc_elem.text:
                     urls.append(loc_elem.text.strip())
 
             # If no urls found, try looking for loc tags directly
             if not urls:
-                for loc_elem in root.findall('.//loc'):
+                for loc_elem in root.findall(".//loc"):
                     if loc_elem.text:
                         urls.append(loc_elem.text.strip())
 
@@ -210,37 +214,56 @@ class RAGOptimizedScraper:
     def is_doc_url(self, url):
         """Check if URL is a documentation page"""
         # Skip non-HTML resources
-        skip_extensions = ['.xml', '.pdf', '.zip', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.json', '.txt']
+        skip_extensions = [
+            ".xml",
+            ".pdf",
+            ".zip",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+            ".svg",
+            ".json",
+            ".txt",
+        ]
         if any(url.lower().endswith(ext) for ext in skip_extensions):
             return False
 
         # Skip certain patterns
-        skip_patterns = ['/blog/', '/tag/', '/tags/', '/archive/', '/authors/']
+        skip_patterns = ["/blog/", "/tag/", "/tags/", "/archive/", "/authors/"]
         if any(pattern in url.lower() for pattern in skip_patterns):
             return False
 
         # Accept URLs from either docs.openwebui.com or openwebui.com
         parsed = urlparse(url)
-        return parsed.netloc in [self.domain, 'openwebui.com', 'www.openwebui.com']
+        return parsed.netloc in [self.domain, "openwebui.com", "www.openwebui.com"]
 
     def clean_content_for_rag(self, soup):
         """Clean and prepare content optimized for RAG"""
         # Remove all navigation, headers, footers, etc.
         selectors_to_remove = [
-            'header', 'nav', 'footer', 'aside',
-            '.navbar', '.footer', '.sidebar', '.navigation',
-            '.theme-doc-sidebar-container',
-            '.theme-doc-toc-desktop',
-            '.theme-doc-breadcrumbs',
-            '.pagination-nav',
-            '.theme-doc-version-banner',
-            '.theme-back-to-top-button',
+            "header",
+            "nav",
+            "footer",
+            "aside",
+            ".navbar",
+            ".footer",
+            ".sidebar",
+            ".navigation",
+            ".theme-doc-sidebar-container",
+            ".theme-doc-toc-desktop",
+            ".theme-doc-breadcrumbs",
+            ".pagination-nav",
+            ".theme-doc-version-banner",
+            ".theme-back-to-top-button",
             '[class*="sidebar"]',
             '[class*="navbar"]',
             '[class*="footer"]',
-            'script', 'style', 'noscript',
-            '.edit-this-page',
-            '.theme-last-updated'
+            "script",
+            "style",
+            "noscript",
+            ".edit-this-page",
+            ".theme-last-updated",
         ]
 
         for selector in selectors_to_remove:
@@ -248,16 +271,16 @@ class RAGOptimizedScraper:
                 element.decompose()
 
         # Remove all links but keep their text
-        for link in soup.find_all('a'):
+        for link in soup.find_all("a"):
             link.replace_with(link.get_text())
 
         # Find main content
         main_content = (
-                soup.find('article') or
-                soup.find('main') or
-                soup.find('div', {'class': 'theme-doc-markdown'}) or
-                soup.find('div', {'class': 'markdown'}) or
-                soup.find('div', {'class': 'container'})
+            soup.find("article")
+            or soup.find("main")
+            or soup.find("div", {"class": "theme-doc-markdown"})
+            or soup.find("div", {"class": "markdown"})
+            or soup.find("div", {"class": "container"})
         )
 
         if not main_content:
@@ -265,7 +288,7 @@ class RAGOptimizedScraper:
 
         # Remove empty divs and clean up
         if main_content:
-            for div in main_content.find_all(['div', 'span']):
+            for div in main_content.find_all(["div", "span"]):
                 if not div.get_text(strip=True):
                     div.decompose()
 
@@ -274,67 +297,73 @@ class RAGOptimizedScraper:
     def post_process_markdown(self, markdown_text):
         """Post-process markdown for better RAG performance"""
         # Remove multiple consecutive newlines
-        markdown_text = re.sub(r'\n{3,}', '\n\n', markdown_text)
+        markdown_text = re.sub(r"\n{3,}", "\n\n", markdown_text)
 
         # Remove leading/trailing whitespace from lines
-        lines = [line.strip() for line in markdown_text.split('\n')]
-        markdown_text = '\n'.join(lines)
+        lines = [line.strip() for line in markdown_text.split("\n")]
+        markdown_text = "\n".join(lines)
 
         # Remove empty headers
-        markdown_text = re.sub(r'^#{1,6}\s*$', '', markdown_text, flags=re.MULTILINE)
+        markdown_text = re.sub(r"^#{1,6}\s*$", "", markdown_text, flags=re.MULTILINE)
 
         # Remove standalone links (leftover from link removal)
-        markdown_text = re.sub(r'^\s*https?://\S+\s*$', '', markdown_text, flags=re.MULTILINE)
+        markdown_text = re.sub(
+            r"^\s*https?://\S+\s*$", "", markdown_text, flags=re.MULTILINE
+        )
 
         # Clean up excessive whitespace again
-        markdown_text = re.sub(r'\n{3,}', '\n\n', markdown_text)
+        markdown_text = re.sub(r"\n{3,}", "\n\n", markdown_text)
 
         # Remove any remaining HTML comments except our URL comment
-        markdown_text = re.sub(r'<!--(?!.*https://).*?-->', '', markdown_text, flags=re.DOTALL)
+        markdown_text = re.sub(
+            r"<!--(?!.*https://).*?-->", "", markdown_text, flags=re.DOTALL
+        )
 
         return markdown_text.strip()
 
     def url_to_filename(self, url):
         """Convert URL to a safe filename"""
         parsed = urlparse(url)
-        path = parsed.path.strip('/')
+        path = parsed.path.strip("/")
 
         if not path:
             path = "index"
 
         # Create more readable filenames
-        filename = path.replace('/', '_')
+        filename = path.replace("/", "_")
 
         # Remove trailing slashes and clean up
-        filename = filename.strip('_')
+        filename = filename.strip("_")
 
         # Ensure .md extension
-        if not filename.endswith('.md'):
-            filename += '.md'
+        if not filename.endswith(".md"):
+            filename += ".md"
 
         return filename
 
     def extract_title(self, soup, url):
         """Extract the most relevant title for the page"""
         # Try to find the main heading
-        h1 = soup.find('h1')
+        h1 = soup.find("h1")
         if h1:
             return h1.get_text(strip=True)
 
         # Try page title
-        title = soup.find('title')
+        title = soup.find("title")
         if title:
             title_text = title.get_text(strip=True)
             # Remove common suffixes
-            title_text = re.sub(r'\s*[\||\-]\s*Open ?WebUI.*$', '', title_text, re.IGNORECASE)
+            title_text = re.sub(
+                r"\s*[\||\-]\s*Open ?WebUI.*$", "", title_text, re.IGNORECASE
+            )
             return title_text
 
         # Fallback to URL path
-        path = urlparse(url).path.strip('/')
+        path = urlparse(url).path.strip("/")
         if path:
-            return path.replace('-', ' ').replace('_', ' ').title()
+            return path.replace("-", " ").replace("_", " ").title()
 
-        return 'Documentation Page'
+        return "Documentation Page"
 
     def scrape_page(self, url):
         """Scrape a single page and convert to RAG-optimized markdown"""
@@ -347,7 +376,7 @@ class RAGOptimizedScraper:
             response = self.rate_limited_request(url)
             response.raise_for_status()
 
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Extract title before cleaning
             title = self.extract_title(soup, url)
@@ -365,7 +394,7 @@ class RAGOptimizedScraper:
                 heading_style="ATX",
                 bullets="-",
                 code_language="",  # Don't assume language
-                strip=['a']  # Strip link tags
+                strip=["a"],  # Strip link tags
             )
 
             # Post-process the markdown
@@ -379,7 +408,7 @@ class RAGOptimizedScraper:
             filename = self.url_to_filename(url)
             filepath = os.path.join(self.output_dir, filename)
 
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 # Add URL as HTML comment for reference
                 # f.write(f"<!-- {url} -->\n\n")  # NO!
 
@@ -415,16 +444,16 @@ class RAGOptimizedScraper:
 
         # Process URLs with thread_map
         results = thread_map(
-            self.scrape_page, 
-            all_urls, 
+            self.scrape_page,
+            all_urls,
             max_workers=self.max_workers,
-            desc="Scraping pages"
+            desc="Scraping pages",
         )
-        
+
         # Count results
         successful = sum(1 for result in results if result)
         failed = len(results) - successful
-        
+
         # Generate scraped files list
         scraped_files = []
         for i, result in enumerate(results):
@@ -453,7 +482,7 @@ def main():
         base_url=START_URL,
         output_dir=OUTPUT_DIR,
         delay=REQUEST_DELAY,
-        max_workers=MAX_WORKERS
+        max_workers=MAX_WORKERS,
     )
 
     scraper.crawl()

@@ -11,25 +11,22 @@ queries = [
     "COVID 19 Data Commons and Analytic Environment",
     "Renaissance School of Medicine COVID data commons",
     "COVID 19 data commons integrated management",
-    "statistical artificial intelligence COVID prediction"
+    "statistical artificial intelligence COVID prediction",
 ]
 
 for query in queries:
     print(f"\nQuery: '{query}'")
-    results = collection.query(
-        query_texts=[query],
-        n_results=3
-    )
-    
-    for i, (doc_id, distance, source) in enumerate(zip(
-        results['ids'][0], 
-        results['distances'][0],
-        results['metadatas'][0]
-    )):
-        print(f"  Result {i+1}: Distance={distance:.3f}, Source={source.get('source', 'Unknown')[:50]}...")
-        
+    results = collection.query(query_texts=[query], n_results=3)
+
+    for i, (doc_id, distance, source) in enumerate(
+        zip(results["ids"][0], results["distances"][0], results["metadatas"][0])
+    ):
+        print(
+            f"  Result {i+1}: Distance={distance:.3f}, Source={source.get('source', 'Unknown')[:50]}..."
+        )
+
         # Check if it's finding the COVID doc
-        if "COVID_19" in source.get('source', ''):
+        if "COVID_19" in source.get("source", ""):
             print("  ✓ Found COVID document!")
 
 print("\n=== Checking Open WebUI's search settings ===")
@@ -40,10 +37,14 @@ print("3. The query reformulation might be changing your search")
 
 print("\n=== Suggestions ===")
 print("1. Try asking with more context:")
-print('   "Tell me about the COVID-19 Data Commons developed by Renaissance School of Medicine"')
+print(
+    '   "Tell me about the COVID-19 Data Commons developed by Renaissance School of Medicine"'
+)
 print("")
 print("2. Try being more specific:")
-print('   "What is the COVID-19 data commons at Stony Brook that supports integrated management?"')
+print(
+    '   "What is the COVID-19 data commons at Stony Brook that supports integrated management?"'
+)
 print("")
 print("3. Check Open WebUI settings:")
 print("   - Go to Settings → Models → Check the RAG settings")
@@ -57,14 +58,16 @@ print("   - This typically takes 5-15 minutes for ~24k documents")
 # Let's also check the exact content that should be returned
 print("\n=== Content Preview ===")
 covid_docs = collection.get(
-    where={"source": "www_stonybrook_edu_commcms_iedm_news_COVID_19_Data_Commons_and_Analytic_Environment.md"},
-    include=["documents"]
+    where={
+        "source": "www_stonybrook_edu_commcms_iedm_news_COVID_19_Data_Commons_and_Analytic_Environment.md"
+    },
+    include=["documents"],
 )
 
-if covid_docs['documents']:
-    content = covid_docs['documents'][0]
+if covid_docs["documents"]:
+    content = covid_docs["documents"][0]
     # Find the main content section
     start = content.find("The Renaissance School")
     if start > 0:
         print("\nKey excerpt from the document:")
-        print(content[start:start+400] + "...")
+        print(content[start : start + 400] + "...")

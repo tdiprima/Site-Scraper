@@ -1,6 +1,7 @@
 # Delete the original duplicated collection from both ChromaDB and the SQLite DB.
-import chromadb
 import sqlite3
+
+import chromadb
 
 print("=== Cleaning up old collection ===")
 
@@ -14,8 +15,10 @@ old_collection_id = "8481691e-f9f2-4653-9643-4910e2e3499b"
 try:
     old_collection = client.get_collection(name=old_collection_id)
     doc_count = old_collection.count()
-    print(f"Original collection 'stonybrook' has {doc_count} documents (with duplicates)")
-    
+    print(
+        f"Original collection 'stonybrook' has {doc_count} documents (with duplicates)"
+    )
+
     # Delete the collection from ChromaDB
     client.delete_collection(name=old_collection_id)
     print("✓ Deleted old collection from ChromaDB")
@@ -23,7 +26,7 @@ except Exception as e:
     print(f"Collection might already be deleted: {e}")
 
 # Also remove it from Open WebUI's database
-conn = sqlite3.connect('/app/backend/data/webui.db')
+conn = sqlite3.connect("/app/backend/data/webui.db")
 cursor = conn.cursor()
 
 # Delete from knowledge table
@@ -52,4 +55,6 @@ for col in collections:
     print(f"- {col.name} ({col.count()} documents)")
 
 print("\n✓ Cleanup complete!")
-print("Your 'Stony Brook Clean' knowledge base is the only one remaining for Stony Brook content.")
+print(
+    "Your 'Stony Brook Clean' knowledge base is the only one remaining for Stony Brook content."
+)

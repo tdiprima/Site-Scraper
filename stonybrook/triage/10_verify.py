@@ -1,11 +1,12 @@
 # Confirm cleanup: validate deletion of old collection and verify integrity of the new one.
-import chromadb
 import sqlite3
+
+import chromadb
 
 print("=== Verifying cleanup results ===")
 
 # Check what's in the database
-conn = sqlite3.connect('/app/backend/data/webui.db')
+conn = sqlite3.connect("/app/backend/data/webui.db")
 cursor = conn.cursor()
 
 cursor.execute("SELECT id, name, description FROM knowledge")
@@ -20,8 +21,10 @@ conn.close()
 client = chromadb.PersistentClient(path="/app/backend/data/vector_db")
 try:
     collection = client.get_collection(name="3c0b5e64-0cde-44f5-b785-3ed5ad8af070")
-    print(f"\n✓ 'Stony Brook Clean' collection exists with {collection.count()} documents")
-    
+    print(
+        f"\n✓ 'Stony Brook Clean' collection exists with {collection.count()} documents"
+    )
+
     # Test it still works
     results = collection.query(query_texts=["test"], n_results=1)
     print("✓ Collection is queryable")
@@ -36,7 +39,9 @@ except:
     print("✓ Old collection successfully deleted")
 
 print("\n=== Summary ===")
-print("✅ Old duplicate collection deleted (saved ~24k duplicate documents worth of space)")
+print(
+    "✅ Old duplicate collection deleted (saved ~24k duplicate documents worth of space)"
+)
 print("✅ 'Stony Brook Clean' is working properly")
 print("✅ Database entries cleaned up")
 print("\nYour Open WebUI is now optimized with just the deduplicated content!")

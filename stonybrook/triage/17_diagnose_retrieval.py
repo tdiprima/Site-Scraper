@@ -11,19 +11,16 @@ print("=== Testing SOP document retrieval ===")
 test_source = "www_stonybrook_edu_commcms_environmental-health-and-safety_programs_laboratory-safety_biological-safety_index.php.md"
 
 # Get the actual document content
-docs = collection.get(
-    where={"source": test_source},
-    include=["documents", "metadatas"]
-)
+docs = collection.get(where={"source": test_source}, include=["documents", "metadatas"])
 
-if docs['ids']:
+if docs["ids"]:
     print(f"\nFound document: {test_source}")
-    content = docs['documents'][0]
-    
+    content = docs["documents"][0]
+
     # Search for SOP in the content
     sop_count = content.upper().count("SOP")
     print(f"'SOP' appears {sop_count} times in this document")
-    
+
     if sop_count > 0:
         # Find and show where SOP appears
         pos = content.upper().find("SOP")
@@ -37,15 +34,23 @@ print("\n=== Testing search for 'SOP' ===")
 results = collection.query(
     query_texts=["SOP"],
     n_results=10,
-    where={"source": {"$in": [
-        "www_stonybrook_edu_commcms_environmental-health-and-safety_programs_laboratory-safety_biological-safety_index.php.md",
-        "www_stonybrook_edu_commcms_univ-senate_senate__senate-activity_capra-03-07-14.php.md"
-    ]}}
+    where={
+        "source": {
+            "$in": [
+                "www_stonybrook_edu_commcms_environmental-health-and-safety_programs_laboratory-safety_biological-safety_index.php.md",
+                "www_stonybrook_edu_commcms_univ-senate_senate__senate-activity_capra-03-07-14.php.md",
+            ]
+        }
+    },
 )
 
 print(f"Search found {len(results['ids'][0])} results")
-for i, (distance, metadata) in enumerate(zip(results['distances'][0], results['metadatas'][0])):
-    print(f"  {i+1}. Distance: {distance:.3f}, Source: {metadata.get('source', 'Unknown')[:60]}...")
+for i, (distance, metadata) in enumerate(
+    zip(results["distances"][0], results["metadatas"][0])
+):
+    print(
+        f"  {i+1}. Distance: {distance:.3f}, Source: {metadata.get('source', 'Unknown')[:60]}..."
+    )
 
 print("\n=== DIAGNOSIS ===")
 print("If SOP exists in documents but search doesn't find them, the issue is:")

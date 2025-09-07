@@ -24,7 +24,7 @@ def show_chunk_samples(chunks, label, n=3):
 
 if __name__ == "__main__":
     # Insert scraped page text here
-    with open('features_plugin_events.md', 'r', encoding='utf-8') as f:
+    with open("features_plugin_events.md", "r", encoding="utf-8") as f:
         text = f.read()
 
     # Config 1: 1000/150

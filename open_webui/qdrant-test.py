@@ -3,9 +3,9 @@ python3 -m venv ~/qdrant-test-env
 source ~/qdrant-test-env/bin/activate
 """
 
-from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct
 import numpy as np
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, PointStruct, VectorParams
 
 QDRANT_HOST = "10.100.0.1"
 QDRANT_PORT = 6333
@@ -23,7 +23,7 @@ if client.collection_exists(COLLECTION_NAME):
 # Create test collection
 client.create_collection(
     collection_name=COLLECTION_NAME,
-    vectors_config=VectorParams(size=768, distance=Distance.COSINE)
+    vectors_config=VectorParams(size=768, distance=Distance.COSINE),
 )
 print(f"Created collection '{COLLECTION_NAME}'")
 
@@ -32,16 +32,16 @@ dummy_vector = np.random.rand(768).tolist()
 client.upsert(
     collection_name=COLLECTION_NAME,
     points=[
-        PointStruct(id=1, vector=dummy_vector, payload={"text": "This is a test document."})
-    ]
+        PointStruct(
+            id=1, vector=dummy_vector, payload={"text": "This is a test document."}
+        )
+    ],
 )
 print("Added test point to collection")
 
 # Search using the recommended query_points method
 result = client.query_points(
-    collection_name=COLLECTION_NAME,
-    query=dummy_vector,
-    limit=1
+    collection_name=COLLECTION_NAME, query=dummy_vector, limit=1
 )
 
 print("Search Result:", result)

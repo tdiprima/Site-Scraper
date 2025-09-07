@@ -1,10 +1,10 @@
 import json
+import multiprocessing
 import os
 import time
 from datetime import datetime
-from typing import List, Dict
-import multiprocessing
 from threading import Semaphore
+from typing import Dict, List
 
 import requests
 from tqdm.contrib.concurrent import thread_map
@@ -22,17 +22,22 @@ class OpenWebUIClient:
             api_key: Your Open WebUI API key
             max_concurrent_requests: Maximum number of concurrent API requests
         """
-        self.base_url = base_url.rstrip('/')
+        self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         # Semaphore to limit concurrent requests to avoid overwhelming the server
         self.request_semaphore = Semaphore(max_concurrent_requests)
 
-    def ask_question(self, question: str, collection_id: str, model: str = "llama4:latest", 
-                    question_index: int = 0) -> Dict:
+    def ask_question(
+        self,
+        question: str,
+        collection_id: str,
+        model: str = "llama4:latest",
+        question_index: int = 0,
+    ) -> Dict:
         """
         Ask a question using the Open WebUI API with collection context
 
@@ -52,12 +57,7 @@ class OpenWebUIClient:
 
             payload = {
                 "model": model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": formatted_content
-                    }
-                ]
+                "messages": [{"role": "user", "content": formatted_content}],
             }
 
             try:
@@ -66,7 +66,7 @@ class OpenWebUIClient:
                     f"{self.base_url}/api/chat/completions",
                     headers=self.headers,
                     json=payload,
-                    timeout=60  # Add timeout to prevent hanging
+                    timeout=60,  # Add timeout to prevent hanging
                 )
 
                 elapsed_time = time.time() - start_time
@@ -79,13 +79,15 @@ class OpenWebUIClient:
                         "timestamp": datetime.now().isoformat(),
                         "error": response.text,
                         "index": question_index,
-                        "processing_time": elapsed_time
+                        "processing_time": elapsed_time,
                     }
 
                 data = response.json()
 
                 # Extract the answer from the response
-                content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
+                content = (
+                    data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                )
 
                 if not content:
                     content = f"Unexpected response format: {json.dumps(data)[:200]}"
@@ -96,7 +98,7 @@ class OpenWebUIClient:
                     "model": model,
                     "timestamp": datetime.now().isoformat(),
                     "index": question_index,
-                    "processing_time": elapsed_time
+                    "processing_time": elapsed_time,
                 }
 
             except Exception as e:
@@ -107,26 +109,32 @@ class OpenWebUIClient:
                     "timestamp": datetime.now().isoformat(),
                     "error": str(e),
                     "index": question_index,
-                    "processing_time": time.time() - start_time if 'start_time' in locals() else 0
+                    "processing_time": (
+                        time.time() - start_time if "start_time" in locals() else 0
+                    ),
                 }
 
     def _process_single_question(self, args):
         """
         Helper function to process a single question (for use with thread_map)
-        
+
         Args:
             args: Tuple of (question, collection_id, model, question_index)
-            
+
         Returns:
             Result dictionary
         """
         question, collection_id, model, question_index = args
         return self.ask_question(question, collection_id, model, question_index)
 
-    def process_questions_parallel(self, questions: List[str], collection_id: str,
-                                 output_file: str = "qa_results.json",
-                                 model: str = "llama4:latest",
-                                 max_workers: int = None) -> None:
+    def process_questions_parallel(
+        self,
+        questions: List[str],
+        collection_id: str,
+        output_file: str = "qa_results.json",
+        model: str = "llama4:latest",
+        max_workers: int = None,
+    ) -> None:
         """
         Process a list of questions in parallel and save results to file
 
@@ -140,34 +148,33 @@ class OpenWebUIClient:
         if max_workers is None:
             # Use CPU count but cap it to avoid overwhelming the server
             max_workers = min(multiprocessing.cpu_count(), 16)
-        
+
         total_questions = len(questions)
-        
+
         print(f"Processing {total_questions} questions in parallel")
         print(f"Using {max_workers} worker threads")
         print(f"Using collection ID: {collection_id}")
         print(f"Model: {model}")
         print("-" * 80)
-        
+
         start_time = time.time()
-        
+
         # Prepare arguments for thread_map
         args_list = [
-            (question, collection_id, model, i)
-            for i, question in enumerate(questions)
+            (question, collection_id, model, i) for i, question in enumerate(questions)
         ]
-        
+
         # Use tqdm.contrib.concurrent.thread_map for parallel processing with progress bar
         results = thread_map(
             self._process_single_question,
             args_list,
             max_workers=max_workers,
             desc="Processing questions",
-            unit="question"
+            unit="question",
         )
-        
+
         total_time = time.time() - start_time
-        
+
         print(f"\n{'=' * 80}")
         print(f"Completed {total_questions} questions in {total_time:.2f} seconds")
         print(f"Average time per question: {total_time/total_questions:.2f}s")
@@ -175,18 +182,24 @@ class OpenWebUIClient:
         print(f"\nResults saved to:")
         print(f"  - JSON: {output_file}")
         print(f"  - Text: {output_file.replace('.json', '_readable.txt')}")
-        
+
         # Save results
         self._save_results(results, output_file)
-        self._save_readable_results(results, output_file.replace('.json', '_readable.txt'))
+        self._save_readable_results(
+            results, output_file.replace(".json", "_readable.txt")
+        )
 
-    def process_questions(self, questions: List[str], collection_id: str,
-                          output_file: str = "qa_results.json",
-                          delay_between_questions: float = 1.0,
-                          model: str = "llama4:latest") -> None:
+    def process_questions(
+        self,
+        questions: List[str],
+        collection_id: str,
+        output_file: str = "qa_results.json",
+        delay_between_questions: float = 1.0,
+        model: str = "llama4:latest",
+    ) -> None:
         """
         Process a list of questions sequentially (original method)
-        
+
         Args:
             questions: List of questions to ask
             collection_id: ID of the collection to use
@@ -207,11 +220,11 @@ class OpenWebUIClient:
             print(f"Q: {question}")
 
             # Ask the question
-            result = self.ask_question(question, collection_id, model, i-1)
+            result = self.ask_question(question, collection_id, model, i - 1)
             results.append(result)
 
             # Print the answer (truncated if too long)
-            answer = result['answer']
+            answer = result["answer"]
             if len(answer) > 200:
                 print(f"A: {answer[:200]}...")
             else:
@@ -230,16 +243,18 @@ class OpenWebUIClient:
         print(f"  - Text: {output_file.replace('.json', '_readable.txt')}")
 
         # Save human-readable version
-        self._save_readable_results(results, output_file.replace('.json', '_readable.txt'))
+        self._save_readable_results(
+            results, output_file.replace(".json", "_readable.txt")
+        )
 
     def _save_results(self, results: List[Dict], output_file: str) -> None:
         """Save results to JSON file"""
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
 
     def _save_readable_results(self, results: List[Dict], output_file: str) -> None:
         """Save results in human-readable format"""
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write("TCIA Q&A Results\n")
             f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write("=" * 80 + "\n\n")
@@ -249,23 +264,29 @@ class OpenWebUIClient:
                 f.write(f"{result['question']}\n\n")
                 f.write(f"Answer:\n")
                 f.write(f"{result['answer']}\n")
-                if 'processing_time' in result:
-                    f.write(f"\nProcessing time: {result['processing_time']:.2f} seconds\n")
+                if "processing_time" in result:
+                    f.write(
+                        f"\nProcessing time: {result['processing_time']:.2f} seconds\n"
+                    )
                 f.write("\n" + "-" * 80 + "\n\n")
 
 
 def main():
     # Configuration
     BASE_URL = "http://localhost:3000"
-    API_KEY = os.environ.get('OPENWEBUI_API_KEY', 'your-api-key-here')  # Uses env var if available
+    API_KEY = os.environ.get(
+        "OPENWEBUI_API_KEY", "your-api-key-here"
+    )  # Uses env var if available
     COLLECTION_ID = "54e6a11e-bfd9-44dc-aea1-62584dd52cd2"  # Your collection ID
     MODEL = "llama4:latest"  # Change this if you want to use a different model
     OUTPUT_FILE = "tcia_qa_results.json"
-    
+
     # Performance tuning options
     USE_PARALLEL = True  # Set to False to use sequential processing
     MAX_WORKERS = None  # None = auto-detect, or set a specific number
-    MAX_CONCURRENT_REQUESTS = 10  # Limit concurrent API requests to avoid overwhelming server
+    MAX_CONCURRENT_REQUESTS = (
+        10  # Limit concurrent API requests to avoid overwhelming server
+    )
 
     # Your questions
     questions = [
@@ -275,53 +296,51 @@ def main():
         "What instructions does TCIA provide for new users?",
         "Does TCIA offer any video tutorials or walk-throughs for using the site?",
         "How does TCIA explain the process for accessing restricted collections?",
-
         # 🔍 Dataset Discovery & Metadata
         "What types of metadata does TCIA provide for its datasets?",
         "How does TCIA describe the process for submitting new datasets?",
         "What information does TCIA provide about imaging modalities?",
         "Does TCIA explain how to interpret the dataset descriptions?",
         "Are there any standardized terms or ontologies used in TCIA datasets?",
-
         # 🧠 Educational / Research Support
         "What educational materials or help guides does TCIA provide for researchers?",
         "Does TCIA offer recommendations for using its data in research studies?",
         "How does TCIA support reproducibility in imaging research?",
         "Does the TCIA website list any example studies or publications using their data?",
-
         # 🧩 Integration & Tools
         "Does TCIA provide APIs or programmatic access to datasets?",
         "What tools or software does TCIA recommend for analyzing its datasets?",
         "Does TCIA offer integration with external platforms like XNAT or NBIA?",
         "What does TCIA say about its DICOM support or tools for viewing images?",
-
         # 🔐 Privacy, Ethics, and Access
         "What does TCIA say about de-identification and patient privacy?",
         "How does TCIA ensure compliance with ethical guidelines?",
         "Are there any usage restrictions for downloading or publishing using TCIA data?",
-
         # 🧪 Community & Contributions
         "How can users contribute datasets to TCIA?",
         "Does the TCIA website explain how to cite datasets?",
         "What kind of user feedback mechanisms does TCIA mention?",
         "Are there any calls for data contributions or collaborations visible on TCIA?",
-
         # ✨ Wish List / Gaps (prompt hallucination for insight)
         "What important features does TCIA not currently have?",
         "Are there any challenges users may face when using TCIA?",
-        "What suggestions does the TCIA website make for future improvements?"
+        "What suggestions does the TCIA website make for future improvements?",
     ]
 
     # Check API key
-    if API_KEY == 'your-api-key-here':
-        print("Warning: Using default API key. Set OPENWEBUI_API_KEY environment variable or update the script.")
+    if API_KEY == "your-api-key-here":
+        print(
+            "Warning: Using default API key. Set OPENWEBUI_API_KEY environment variable or update the script."
+        )
         print("You can set it with: export OPENWEBUI_API_KEY='your-actual-key'")
         user_input = input("\nContinue anyway? (y/n): ")
-        if user_input.lower() != 'y':
+        if user_input.lower() != "y":
             return
 
     # Create client and process questions
-    client = OpenWebUIClient(BASE_URL, API_KEY, max_concurrent_requests=MAX_CONCURRENT_REQUESTS)
+    client = OpenWebUIClient(
+        BASE_URL, API_KEY, max_concurrent_requests=MAX_CONCURRENT_REQUESTS
+    )
 
     try:
         if USE_PARALLEL:
@@ -330,7 +349,7 @@ def main():
                 collection_id=COLLECTION_ID,
                 output_file=OUTPUT_FILE,
                 model=MODEL,
-                max_workers=MAX_WORKERS
+                max_workers=MAX_WORKERS,
             )
         else:
             client.process_questions(
@@ -338,13 +357,14 @@ def main():
                 collection_id=COLLECTION_ID,
                 output_file=OUTPUT_FILE,
                 delay_between_questions=2.0,  # 2-second delay between questions
-                model=MODEL
+                model=MODEL,
             )
     except KeyboardInterrupt:
         print("\n\nProcess interrupted by user")
     except Exception as e:
         print(f"\nError: {e}")
         import traceback
+
         traceback.print_exc()
 
 

@@ -1,7 +1,7 @@
-import sqlite3
 import json
+import sqlite3
 
-conn = sqlite3.connect('/app/backend/data/webui.db')
+conn = sqlite3.connect("/app/backend/data/webui.db")
 cursor = conn.cursor()
 
 print("=== Checking Global vs User Settings ===")
@@ -28,17 +28,19 @@ problem_users = []
 for name, email, settings_json in users:
     try:
         settings = json.loads(settings_json)
-        params = settings.get('ui', {}).get('params', {})
-        top_k = params.get('top_k', 'default')
+        params = settings.get("ui", {}).get("params", {})
+        top_k = params.get("top_k", "default")
         print(f"{name} ({email}): top_k = {top_k}")
-        
-        if top_k != 'default' and top_k < 50:
+
+        if top_k != "default" and top_k < 50:
             problem_users.append((name, email))
     except:
         pass
 
 if problem_users:
-    print(f"\n⚠️  Found {len(problem_users)} users with potentially problematic settings:")
+    print(
+        f"\n⚠️  Found {len(problem_users)} users with potentially problematic settings:"
+    )
     for name, email in problem_users:
         print(f"  - {name} ({email})")
 

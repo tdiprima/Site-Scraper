@@ -1,5 +1,6 @@
-import chromadb
 import time
+
+import chromadb
 
 client = chromadb.PersistentClient(path="/app/backend/data/vector_db")
 collection = client.get_collection(name="3c0b5e64-0cde-44f5-b785-3ed5ad8af070")
@@ -11,10 +12,7 @@ test_query = "COVID-19 Data Commons"
 # Test with different k values
 for k in [10, 50, 100, 500, 1000]:
     start = time.time()
-    results = collection.query(
-        query_texts=[test_query],
-        n_results=k
-    )
+    results = collection.query(query_texts=[test_query], n_results=k)
     elapsed = time.time() - start
     print(f"Retrieving top {k:4d}: {elapsed:.3f} seconds")
 

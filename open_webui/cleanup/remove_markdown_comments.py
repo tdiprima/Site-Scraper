@@ -1,6 +1,7 @@
 """
 Removes HTML comment lines from the first line of markdown files
 """
+
 import glob
 import os
 
@@ -8,13 +9,17 @@ import os
 def remove_first_line(file_path):
     try:
         # Read all lines
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             lines = file.readlines()
 
         # Check if first line is a markdown comment
-        if lines and lines[0].strip().startswith('<!--') and lines[0].strip().endswith('-->'):
+        if (
+            lines
+            and lines[0].strip().startswith("<!--")
+            and lines[0].strip().endswith("-->")
+        ):
             # Write back all lines except the first
-            with open(file_path, 'w', encoding='utf-8') as file:
+            with open(file_path, "w", encoding="utf-8") as file:
                 file.writelines(lines[1:])
             print(f"Processed: {file_path}")
         else:
@@ -24,10 +29,10 @@ def remove_first_line(file_path):
 
 
 # Directory path
-directory = '/home/tdiprima/open-webui/data/uploads'
+directory = "/home/tdiprima/open-webui/data/uploads"
 
 # Find all .md files
-md_files = glob.glob(os.path.join(directory, '*.md'))
+md_files = glob.glob(os.path.join(directory, "*.md"))
 
 # Process each file
 for md_file in md_files:

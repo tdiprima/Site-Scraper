@@ -1,8 +1,8 @@
 # Extract current RAG threshold settings from Open WebUI's database configuration.
-import sqlite3
 import json
+import sqlite3
 
-conn = sqlite3.connect('/app/backend/data/webui.db')
+conn = sqlite3.connect("/app/backend/data/webui.db")
 cursor = conn.cursor()
 
 print("=== Extracting RAG Configuration ===")
@@ -20,7 +20,9 @@ for config in configs:
         pass
 
 # Get user-specific settings
-cursor.execute("SELECT id, name, settings FROM user WHERE email='tammy.diprima@stonybrook.edu'")
+cursor.execute(
+    "SELECT id, name, settings FROM user WHERE email='tammy.diprima@stonybrook.edu'"
+)
 user_data = cursor.fetchone()
 
 if user_data:
@@ -28,13 +30,17 @@ if user_data:
         settings = json.loads(user_data[2])
         print("\n=== Your User Settings ===")
         print(json.dumps(settings, indent=2))
-        
+
         # Look specifically for RAG params
-        if 'ui' in settings and 'params' in settings['ui']:
+        if "ui" in settings and "params" in settings["ui"]:
             print("\n=== Current RAG Parameters ===")
             print(f"top_k: {settings['ui']['params'].get('top_k', 'not set')}")
-            print(f"score_threshold: {settings['ui']['params'].get('score_threshold', 'not set')}")
-            print(f"relevance_threshold: {settings['ui']['params'].get('relevance_threshold', 'not set')}")
+            print(
+                f"score_threshold: {settings['ui']['params'].get('score_threshold', 'not set')}"
+            )
+            print(
+                f"relevance_threshold: {settings['ui']['params'].get('relevance_threshold', 'not set')}"
+            )
     except:
         pass
 

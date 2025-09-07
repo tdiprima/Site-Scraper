@@ -1,5 +1,5 @@
-import subprocess
 import json
+import subprocess
 from datetime import datetime
 
 # Latest Stony Brook questions
@@ -23,11 +23,13 @@ questions = [
     "What's Stony Brook University's current policy on standardized testing, and how does it affect different types of applicants?",
     "I'm a prospective biology major at Stony Brook University interested in marine science and undergraduate research. Based on everything Stony Brook offers, what would be my best path through the university?",
     "What should a student at Stony Brook University do if they're struggling academically and need support services? What resources are available?",
-    "I want to study abroad but also do research. How can I combine these goals at Stony Brook University?"
+    "I want to study abroad but also do research. How can I combine these goals at Stony Brook University?",
 ]
 
 MODEL = "llama4:latest"  # Change if you want another model
-OUTPUT_FILE = f"ollama_stonybrook_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+OUTPUT_FILE = (
+    f"ollama_stonybrook_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+)
 
 results = []
 
@@ -38,22 +40,16 @@ for idx, question in enumerate(questions, 1):
 
     # Use ollama's CLI
     completed = subprocess.run(
-        ["ollama", "run", MODEL, prompt],
-        capture_output=True,
-        text=True
+        ["ollama", "run", MODEL, prompt], capture_output=True, text=True
     )
 
     answer = completed.stdout.strip()
     print(f"A: {answer[:200]}{'...' if len(answer) > 200 else ''}")
 
-    results.append({
-        "question": question,
-        "answer": answer
-    })
+    results.append({"question": question, "answer": answer})
 
 # Save to JSON
 with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
     json.dump(results, f, indent=2, ensure_ascii=False)
 
 print(f"\nAll results saved to {OUTPUT_FILE}")
-

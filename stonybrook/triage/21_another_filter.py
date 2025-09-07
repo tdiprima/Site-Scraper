@@ -1,19 +1,21 @@
 # Investigate further hidden filtering mechanisms in the Open WebUI configuration affecting retrieval.
-import sqlite3
 import json
+import sqlite3
 
-conn = sqlite3.connect('/app/backend/data/webui.db')
+conn = sqlite3.connect("/app/backend/data/webui.db")
 cursor = conn.cursor()
 
 print("=== Investigating the Real Problem ===")
 
 # Check if there's another threshold mechanism
-cursor.execute("SELECT id, settings FROM user WHERE email='tammy.diprima@stonybrook.edu'")
+cursor.execute(
+    "SELECT id, settings FROM user WHERE email='tammy.diprima@stonybrook.edu'"
+)
 user_id, settings_json = cursor.fetchone()
 settings = json.loads(settings_json)
 
 print("Your current user params:")
-print(json.dumps(settings['ui']['params'], indent=2))
+print(json.dumps(settings["ui"]["params"], indent=2))
 
 # Let's check the system config more carefully
 cursor.execute("SELECT * FROM config")
@@ -21,9 +23,14 @@ config = cursor.fetchone()
 config_data = json.loads(config[1])
 
 print("\nSystem RAG config:")
-rag_config = config_data.get('rag', {})
+rag_config = config_data.get("rag", {})
 for key, value in rag_config.items():
-    if 'threshold' in key.lower() or 'score' in key.lower() or 'top' in key.lower() or 'rerank' in key.lower():
+    if (
+        "threshold" in key.lower()
+        or "score" in key.lower()
+        or "top" in key.lower()
+        or "rerank" in key.lower()
+    ):
         print(f"  {key}: {value}")
 
 print("\n=== The Real Issue ===")

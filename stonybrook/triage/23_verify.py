@@ -1,7 +1,7 @@
-import sqlite3
 import json
+import sqlite3
 
-conn = sqlite3.connect('/app/backend/data/webui.db')
+conn = sqlite3.connect("/app/backend/data/webui.db")
 cursor = conn.cursor()
 
 print("=== Verifying All RAG Settings ===")
@@ -9,7 +9,7 @@ print("=== Verifying All RAG Settings ===")
 # Check system config
 cursor.execute("SELECT data FROM config")
 config = json.loads(cursor.fetchone()[0])
-rag = config['rag']
+rag = config["rag"]
 
 print("System RAG settings:")
 print(f"- top_k: {rag['top_k']} (initial retrieval)")
@@ -23,7 +23,9 @@ settings = json.loads(cursor.fetchone()[0])
 
 print(f"\nYour user settings:")
 print(f"- top_k: {settings['ui']['params']['top_k']}")
-print(f"- relevance_threshold: {settings['ui']['params'].get('relevance_threshold', 'not set')}")
+print(
+    f"- relevance_threshold: {settings['ui']['params'].get('relevance_threshold', 'not set')}"
+)
 
 conn.close()
 

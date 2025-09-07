@@ -8,7 +8,7 @@ import os
 def rename_files_with_underscores(directory):
     """
     Rename all files in the specified directory by replacing spaces with underscores.
-    
+
     Args:
         directory (str): Path to the directory containing files to rename
     """
@@ -38,14 +38,16 @@ def rename_files_with_underscores(directory):
                 continue
 
             # Check if filename contains spaces
-            if ' ' in filename:
+            if " " in filename:
                 # Create new filename with underscores instead of spaces
-                new_filename = filename.replace(' ', '_')
+                new_filename = filename.replace(" ", "_")
                 new_path = os.path.join(directory, new_filename)
 
                 # Check if a file with the new name already exists
                 if os.path.exists(new_path):
-                    print(f"Warning: Cannot rename '{filename}' - '{new_filename}' already exists.")
+                    print(
+                        f"Warning: Cannot rename '{filename}' - '{new_filename}' already exists."
+                    )
                     skipped_count += 1
                     continue
 

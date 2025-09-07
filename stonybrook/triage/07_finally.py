@@ -1,7 +1,8 @@
 # Recreate deduplicated ChromaDB collection without embeddings to resolve mismatch issues.
-import chromadb
 import sqlite3
 import time
+
+import chromadb
 
 print("=== Fixing embedding dimension mismatch ===")
 
@@ -25,17 +26,14 @@ all_data = original_collection.get(include=["documents", "metadatas"])
 # Deduplicate again
 print("Deduplicating documents...")
 unique_docs = {}
-for i in range(len(all_data['ids'])):
-    doc_id = all_data['ids'][i]
-    document = all_data['documents'][i]
-    metadata = all_data['metadatas'][i]
-    
-    source = metadata.get('source', doc_id)
+for i in range(len(all_data["ids"])):
+    doc_id = all_data["ids"][i]
+    document = all_data["documents"][i]
+    metadata = all_data["metadatas"][i]
+
+    source = metadata.get("source", doc_id)
     if source not in unique_docs:
-        unique_docs[source] = {
-            'document': document,
-            'metadata': metadata
-        }
+        unique_docs[source] = {"document": document, "metadata": metadata}
 
 print(f"✓ Deduplicated to {len(unique_docs)} unique documents")
 
@@ -50,21 +48,19 @@ all_unique_docs = list(unique_docs.values())
 
 print(f"Adding {len(all_unique_docs)} documents...")
 for i in range(0, len(all_unique_docs), batch_size):
-    batch = all_unique_docs[i:i + batch_size]
-    
+    batch = all_unique_docs[i : i + batch_size]
+
     ids = [f"doc_{i+j}" for j in range(len(batch))]
-    documents = [d['document'] for d in batch]
-    metadatas = [d['metadata'] for d in batch]
-    
+    documents = [d["document"] for d in batch]
+    metadatas = [d["metadata"] for d in batch]
+
     # Add WITHOUT embeddings - let ChromaDB generate them
-    new_collection.add(
-        ids=ids,
-        documents=documents,
-        metadatas=metadatas
-    )
-    
+    new_collection.add(ids=ids, documents=documents, metadatas=metadatas)
+
     if (i + batch_size) % 2000 == 0:
-        print(f"  Progress: {min(i + batch_size, len(all_unique_docs))}/{len(all_unique_docs)} documents")
+        print(
+            f"  Progress: {min(i + batch_size, len(all_unique_docs))}/{len(all_unique_docs)} documents"
+        )
 
 print(f"\n✓ Collection recreated with {new_collection.count()} documents")
 
@@ -72,34 +68,34 @@ print(f"\n✓ Collection recreated with {new_collection.count()} documents")
 print("\n=== Testing the fixed collection ===")
 test_query = "Stony Brook University programs"
 try:
-    results = new_collection.query(
-        query_texts=[test_query],
-        n_results=3
-    )
+    results = new_collection.query(query_texts=[test_query], n_results=3)
     print(f"✓ Query successful! Found {len(results['ids'][0])} results")
     print("\nThe knowledge base should now work properly in Open WebUI!")
 except Exception as e:
     print(f"Query error: {e}")
 
 # Update the document table entry
-conn = sqlite3.connect('/app/backend/data/webui.db')
+conn = sqlite3.connect("/app/backend/data/webui.db")
 cursor = conn.cursor()
 
 current_timestamp = int(time.time())
-cursor.execute("""
+cursor.execute(
+    """
     UPDATE document 
     SET title = ?,
         filename = ?,
         content = ?,
         timestamp = ?
     WHERE collection_name = ?
-""", (
-    f"Stony Brook University - Deduplicated ({new_collection.count()} documents)",
-    "stonybrook_deduplicated.md",
-    f"Deduplicated knowledge base containing {new_collection.count()} unique documents from Stony Brook University website",
-    current_timestamp,
-    collection_id
-))
+""",
+    (
+        f"Stony Brook University - Deduplicated ({new_collection.count()} documents)",
+        "stonybrook_deduplicated.md",
+        f"Deduplicated knowledge base containing {new_collection.count()} unique documents from Stony Brook University website",
+        current_timestamp,
+        collection_id,
+    ),
+)
 
 conn.commit()
 conn.close()

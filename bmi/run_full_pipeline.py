@@ -23,11 +23,12 @@ subprocess.run(["python3", SCRAPER_SCRIPT], check=True)
 
 # === Step 2: Clean markdown files and save to CLEANED_DIR ===
 
+
 def clean_markdown_links_and_images(text):
     # Remove images: ![alt](url) -> alt
-    text = re.sub(r'!\[([^\]]*)\]\([^)]+\)', r'\1', text)
+    text = re.sub(r"!\[([^\]]*)\]\([^)]+\)", r"\1", text)
     # Remove regular links: [text](url) -> text
-    text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
     return text
 
 
@@ -40,28 +41,49 @@ if not md_files:
     exit(1)
 
 for md_file in md_files:
-    original_text = md_file.read_text(encoding='utf-8')
+    original_text = md_file.read_text(encoding="utf-8")
     cleaned_text = clean_markdown_links_and_images(original_text)
     cleaned_path = Path(CLEANED_DIR) / md_file.name
-    cleaned_path.write_text(cleaned_text, encoding='utf-8')
+    cleaned_path.write_text(cleaned_text, encoding="utf-8")
     print(f"  Cleaned: {md_file.name} → {cleaned_path.name}")
 
 
 # === Step 3: Strip header/footer from all files in CLEANED_DIR ===
 
+
 def strip_header_footer(path):
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     # find header range
-    start_idx = next((i for i, l in enumerate(lines) if "Skip to main content" in l), None)
+    start_idx = next(
+        (i for i, l in enumerate(lines) if "Skip to main content" in l), None
+    )
     end_idx = None
     if start_idx is not None:
-        end_idx = next((j for j in range(start_idx, len(lines)) if "Google Summer of Code" in lines[j]), start_idx)
+        end_idx = next(
+            (
+                j
+                for j in range(start_idx, len(lines))
+                if "Google Summer of Code" in lines[j]
+            ),
+            start_idx,
+        )
 
     # find footer start
-    footer_patterns = ("Stony Brook Medicine", "Stony Brook University Hospital", "Stony Brook Children's Hospital",)
-    footer_idx = next((i for i, l in enumerate(lines) if any(l.startswith(p) for p in footer_patterns)), None)
+    footer_patterns = (
+        "Stony Brook Medicine",
+        "Stony Brook University Hospital",
+        "Stony Brook Children's Hospital",
+    )
+    footer_idx = next(
+        (
+            i
+            for i, l in enumerate(lines)
+            if any(l.startswith(p) for p in footer_patterns)
+        ),
+        None,
+    )
 
     # build filtered lines
     new_lines = []
@@ -73,7 +95,7 @@ def strip_header_footer(path):
         new_lines.append(l)
 
     # overwrite file
-    with open(path, 'w', encoding='utf-8') as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.writelines(new_lines)
 
 

@@ -3,6 +3,7 @@ Crawl all pages under https://bmi.stonybrookmedicine.edu/*, convert each to mark
 excluding headers/footers, and save as separate .md files.
 Respects robots.txt and skips PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX files.
 """
+
 import os
 import sys
 import urllib.robotparser
@@ -22,7 +23,18 @@ QUEUE_FILE = "queue.txt"
 REQUEST_TIMEOUT = 10  # seconds
 
 # File extensions to skip
-SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg"]
+SKIP_EXTENSIONS = [
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".ppt",
+    ".pptx",
+    ".xls",
+    ".xlsx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+]
 
 # Setup
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -92,8 +104,12 @@ try:
             if any(ext in path for ext in SKIP_EXTENSIONS):
                 continue
             # Only allow within allowed domain and prefix
-            if (parsed.netloc == ALLOWED_DOMAIN and href.startswith(
-                ALLOWED_URL_PREFIX) and href not in visited and href not in queue):
+            if (
+                parsed.netloc == ALLOWED_DOMAIN
+                and href.startswith(ALLOWED_URL_PREFIX)
+                and href not in visited
+                and href not in queue
+            ):
                 # Check robots.txt before queuing (optional, can remove for speed)
                 if rp is not None and not rp.can_fetch(USER_AGENT, href):
                     continue
