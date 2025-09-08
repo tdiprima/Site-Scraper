@@ -93,7 +93,7 @@ class SingleThreadedUploader:
 
     def load_progress(self):
         """Load previous progress if resuming"""
-        if os.path.exists(self.progress_file):
+        if Path(self.progress_file).exists():
             try:
                 with open(self.progress_file, "r") as f:
                     data = json.load(f)
@@ -415,7 +415,7 @@ def main():
             sys.exit(1)
     else:
         logger.info(f"Scanning directory: {DIRECTORY_PATH}")
-        if not os.path.exists(DIRECTORY_PATH):
+        if not Path(DIRECTORY_PATH).exists():
             logger.error(f"Directory not found: {DIRECTORY_PATH}")
             sys.exit(1)
         file_paths = get_files_from_directory(DIRECTORY_PATH, FILE_EXTENSIONS)

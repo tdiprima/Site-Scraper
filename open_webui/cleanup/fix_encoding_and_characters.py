@@ -72,7 +72,7 @@ def clean_text_content(content):
     for char in content:
         # Check if character is an emoji or symbol
         cat = unicodedata.category(char)
-        if cat in ["So", "Sk", "Sm"]:  # Symbol other, Symbol modifier, Symbol math
+        if cat in ("So", "Sk", "Sm"):  # Symbol other, Symbol modifier, Symbol math
             # Additional check for common emoji ranges
             code_point = ord(char)
             if (
@@ -144,8 +144,7 @@ def clean_document(file_path, backup_dir=None):
 
         for encoding in encodings_to_try:
             try:
-                with open(file_path, "r", encoding=encoding, errors="replace") as f:
-                    content = f.read()
+                content = Path(file_path).read_text(encoding=encoding, errors="replace")
                 results["original_encoding"] = encoding
                 break
             except (UnicodeDecodeError, UnicodeError):
@@ -284,10 +283,7 @@ def main():
             print(f"  {count:3d}x {fix}")
 
     # Show files that still might have issues
-    problem_files = []
-    for result in all_results:
-        if not result["success"]:
-            problem_files.append(result)
+    problem_files = [result for result in all_results if not result["success"]]
 
     if problem_files:
         print("\nFiles that still need attention:")

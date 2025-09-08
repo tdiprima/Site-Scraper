@@ -19,8 +19,7 @@ def clean_document(file_path):
         bool: True if file was modified, False otherwise
     """
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            content = f.read()
+        content = file_path.read_text(encoding="utf-8")
 
         original_content = content
 

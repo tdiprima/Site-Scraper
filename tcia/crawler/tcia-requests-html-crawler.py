@@ -10,6 +10,7 @@ python tcia-requests-html-crawler.py
 import hashlib
 import os
 from collections import deque
+from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import html2text
@@ -65,7 +66,7 @@ class TCIARequestsHTMLCrawler:
 
         # Create output directory - DIFFERENT from original to protect existing files
         self.output_dir = "tcia_dynamic_content_only"
-        os.makedirs(self.output_dir, exist_ok=True)
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
         logger.info(f"Output directory: {self.output_dir} (protecting existing files)")
 
         # HTML to Markdown converter
@@ -215,7 +216,7 @@ class TCIARequestsHTMLCrawler:
 
         # Add hash if filename already exists
         filepath = os.path.join(self.output_dir, filename)
-        if os.path.exists(filepath):
+        if Path(filepath).exists():
             url_hash = hashlib.md5(url.encode()).hexdigest()[:8]
             filename = f"{filename.rsplit('.', 1)[0]}_{url_hash}.md"
             filepath = os.path.join(self.output_dir, filename)

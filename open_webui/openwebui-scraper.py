@@ -3,6 +3,7 @@ import os
 import re
 import time
 import xml.etree.ElementTree as ET
+from pathlib import Path
 from threading import Lock
 from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
@@ -43,7 +44,7 @@ class RAGOptimizedScraper:
         self.process_lock = Lock()
 
         # Create output directory
-        os.makedirs(output_dir, exist_ok=True)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
 
         # Set up robots.txt parser
         self.robot_parser = RobotFileParser()
@@ -236,7 +237,7 @@ class RAGOptimizedScraper:
 
         # Accept URLs from either docs.openwebui.com or openwebui.com
         parsed = urlparse(url)
-        return parsed.netloc in [self.domain, "openwebui.com", "www.openwebui.com"]
+        return parsed.netloc in (self.domain, "openwebui.com", "www.openwebui.com")
 
     def clean_content_for_rag(self, soup):
         """Clean and prepare content optimized for RAG"""
@@ -315,11 +316,9 @@ class RAGOptimizedScraper:
         markdown_text = re.sub(r"\n{3,}", "\n\n", markdown_text)
 
         # Remove any remaining HTML comments except our URL comment
-        markdown_text = re.sub(
+        return re.sub(
             r"<!--(?!.*https://).*?-->", "", markdown_text, flags=re.DOTALL
-        )
-
-        return markdown_text.strip()
+        ).strip()
 
     def url_to_filename(self, url):
         """Convert URL to a safe filename"""
@@ -329,11 +328,8 @@ class RAGOptimizedScraper:
         if not path:
             path = "index"
 
-        # Create more readable filenames
-        filename = path.replace("/", "_")
-
-        # Remove trailing slashes and clean up
-        filename = filename.strip("_")
+        # Create more readable filenames and remove trailing slashes
+        filename = path.replace("/", "_").strip("_")
 
         # Ensure .md extension
         if not filename.endswith(".md"):
@@ -422,7 +418,7 @@ class RAGOptimizedScraper:
             return True
 
         except Exception as e:
-            logger.error(f"✗ Error scraping {url}: {str(e)}")
+            logger.error(f"✗ Error scraping {url}: {e}")
             return False
 
     def crawl(self):

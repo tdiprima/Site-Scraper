@@ -1,5 +1,6 @@
 import os
 import time
+from pathlib import Path
 
 import requests
 
@@ -28,12 +29,11 @@ def add_file_to_knowledge(token, knowledge_id, file_id):
     url = f"http://localhost:3000/api/v1/knowledge/{knowledge_id}/file/add"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     data = {"file_id": file_id}
-    response = requests.post(url, headers=headers, json=data)
-    return response.json()
+    return requests.post(url, headers=headers, json=data).json()
 
 
 def load_progress(file_path):
-    if os.path.exists(file_path):
+    if Path(file_path).exists():
         with open(file_path, "r", encoding="utf-8") as f:
             return set(line.strip() for line in f if line.strip())
     return set()

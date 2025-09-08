@@ -60,7 +60,7 @@ class OpenWebUIClient:
             print("  - Verify the URL is correct")
             return False
         except Exception as e:
-            print(f"✗ Connection test failed: {str(e)}")
+            print(f"✗ Connection test failed: {e}")
             return False
 
     def ask_question(
@@ -142,7 +142,7 @@ class OpenWebUIClient:
         except Exception as e:
             return {
                 "question": question,
-                "answer": f"Error: {str(e)}",
+                "answer": f"Error: {e}",
                 "model": model,
                 "timestamp": datetime.now().isoformat(),
                 "error": str(e),

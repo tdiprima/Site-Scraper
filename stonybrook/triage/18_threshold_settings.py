@@ -1,6 +1,7 @@
 # Investigate Open WebUI's configuration files and database tables to locate similarity threshold settings.
 import os
 import sqlite3
+from pathlib import Path
 
 print("=== Finding Open WebUI's RAG Configuration ===")
 
@@ -23,7 +24,7 @@ for table in tables:
 
         # Look for columns that might contain RAG settings
         if any(
-            col in columns for col in ["config", "settings", "meta", "data", "params"]
+            col in columns for col in ("config", "settings", "meta", "data", "params")
         ):
             print(f"\n--- Checking {table_name} for RAG settings ---")
             cursor.execute(f"SELECT * FROM {table_name}")
@@ -33,7 +34,7 @@ for table in tables:
                 row_str = str(row).lower()
                 if any(
                     term in row_str
-                    for term in ["rag", "retriev", "threshold", "top_k", "similarity"]
+                    for term in ("rag", "retriev", "threshold", "top_k", "similarity")
                 ):
                     print(f"Found potential config in {table_name}: {row}")
                     config_found = True
@@ -52,7 +53,7 @@ config_paths = [
 ]
 
 for path in config_paths:
-    if os.path.exists(path):
+    if Path(path).exists():
         print(f"\n--- {path} ---")
         try:
             with open(path, "r") as f:
@@ -61,7 +62,7 @@ for path in config_paths:
                 for line in content.split("\n"):
                     if any(
                         term in line.lower()
-                        for term in ["threshold", "top_k", "rag", "score", "similarity"]
+                        for term in ("threshold", "top_k", "rag", "score", "similarity")
                     ):
                         print(line.strip())
         except Exception as e:

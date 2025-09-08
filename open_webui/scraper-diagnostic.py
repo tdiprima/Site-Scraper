@@ -86,7 +86,7 @@ def diagnose_site(url):
             ["a"],
             href=lambda x: x
             and any(
-                pattern in x for pattern in ["/docs/", "/guide/", "/api/", "/tutorial/"]
+                pattern in x for pattern in ("/docs/", "/guide/", "/api/", "/tutorial/")
             ),
         )
         print(f"   - Found {len(doc_patterns)} documentation-style links")

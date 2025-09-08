@@ -7,6 +7,7 @@ Scrapes documentation from product-help.interfolio.com and saves as markdown fil
 import os
 import re
 import time
+from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
@@ -29,7 +30,7 @@ class InterfolioScraper:
         self.domain = urlparse(base_url).netloc
 
         # Create output directory
-        os.makedirs(self.output_dir, exist_ok=True)
+        Path(self.output_dir).mkdir(parents=True, exist_ok=True)
 
         # HTML session for requests_html
         self.session = HTMLSession()
@@ -83,18 +84,18 @@ class InterfolioScraper:
 
         # Remove common footer patterns
         for element in soup.find_all(
-            text=re.compile(r"Was this article helpful\?", re.I)
+            text=re.compile(r"Was this article helpful\?", re.IGNORECASE)
         ):
             parent = element.parent
-            while parent and parent.name not in ["section", "div", "article"]:
+            while parent and parent.name not in ("section", "div", "article"):
                 parent = parent.parent
             if parent:
                 parent.decompose()
 
         # Remove "Related Articles" sections
-        for element in soup.find_all(text=re.compile(r"Related Articles", re.I)):
+        for element in soup.find_all(text=re.compile(r"Related Articles", re.IGNORECASE)):
             parent = element.parent
-            while parent and parent.name not in ["section", "div", "article"]:
+            while parent and parent.name not in ("section", "div", "article"):
                 parent = parent.parent
             if parent:
                 parent.decompose()
@@ -118,15 +119,12 @@ class InterfolioScraper:
         markdown_content = md(str(main_content), heading_style="ATX", bullets="-")
 
         # Clean up excessive newlines
-        markdown_content = re.sub(r"\n{3,}", "\n\n", markdown_content)
-
-        return markdown_content.strip()
+        return re.sub(r"\n{3,}", "\n\n", markdown_content).strip()
 
     def generate_filename(self, url, title=None):
         """Generate a safe filename from URL and title"""
         path = urlparse(url).path
-        if path.endswith("/"):
-            path = path[:-1]
+        path = path.removesuffix("/")
 
         if title:
             # Use title for filename
@@ -148,7 +146,7 @@ class InterfolioScraper:
                 full_filename = f"{base_filename}_{counter}.md"
 
             filepath = os.path.join(self.output_dir, full_filename)
-            if not os.path.exists(filepath):
+            if not Path(filepath).exists():
                 return full_filename
             counter += 1
 
@@ -207,7 +205,7 @@ class InterfolioScraper:
                     # Skip certain file types
                     if not any(
                         absolute_url.endswith(ext)
-                        for ext in [".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip"]
+                        for ext in (".pdf", ".png", ".jpg", ".jpeg", ".gif", ".zip")
                     ):
                         internal_links.append(absolute_url)
 

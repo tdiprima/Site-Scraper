@@ -10,10 +10,10 @@ RAW_DIR = "output_markdown"
 CLEANED_DIR = "cleaned_markdown"
 
 # Ensure clean start
-if os.path.exists(RAW_DIR):
+if Path(RAW_DIR).exists():
     print(f"Removing old '{RAW_DIR}' dir...")
     shutil.rmtree(RAW_DIR)
-if os.path.exists(CLEANED_DIR):
+if Path(CLEANED_DIR).exists():
     print(f"Removing old '{CLEANED_DIR}' dir...")
     shutil.rmtree(CLEANED_DIR)
 
@@ -34,7 +34,7 @@ def clean_markdown_links_and_images(text):
 
 print("\n[2/3] Cleaning markdown links and images...")
 
-os.makedirs(CLEANED_DIR, exist_ok=True)
+Path(CLEANED_DIR).mkdir(parents=True, exist_ok=True)
 md_files = list(Path(RAW_DIR).glob("*.md"))
 if not md_files:
     print(f"No Markdown files found in '{RAW_DIR}'!")

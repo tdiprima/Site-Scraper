@@ -15,6 +15,7 @@ import signal
 import threading
 import time
 import urllib.robotparser
+from pathlib import Path
 from queue import Empty, Queue
 from urllib.parse import urljoin, urlparse
 
@@ -70,7 +71,7 @@ SKIP_PATTERNS = [
 ]
 
 # Setup
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
 # Global variables for thread coordination
 visited = set()
@@ -157,7 +158,7 @@ def clean_html(html):
             "class": lambda x: x
             and any(
                 pattern in " ".join(x).lower()
-                for pattern in [
+                for pattern in (
                     "header",
                     "footer",
                     "navigation",
@@ -187,7 +188,7 @@ def clean_html(html):
             "id": lambda x: x
             and any(
                 pattern in x.lower()
-                for pattern in [
+                for pattern in (
                     "header",
                     "footer",
                     "nav",
@@ -268,7 +269,7 @@ def clean_html(html):
         class_=lambda x: x
         and any(
             pattern in " ".join(x).lower()
-            for pattern in ["column", "columns", "col-", "grid"]
+            for pattern in ("column", "columns", "col-", "grid")
         ),
     ):
         # Replace the div with its contents, effectively removing the column wrapper
@@ -291,7 +292,7 @@ def clean_html(html):
         # Remove headers that are likely site-wide headers
         if any(
             pattern in text
-            for pattern in [
+            for pattern in (
                 "stony brook",
                 "university",
                 "navigation",
@@ -338,9 +339,7 @@ def clean_html(html):
     # Replace more than 2 consecutive newlines with 2
     markdown = re.sub(r"\n{3,}", "\n\n", markdown)
     # Clean up spaces at the beginning and end of lines
-    lines = markdown.split("\n")
-    lines = [line.strip() for line in lines]
-    markdown = "\n".join(lines)
+    markdown = "\n".join(line.strip() for line in markdown.split("\n"))
 
     # Post-process to remove common header/footer text patterns
     filtered_lines = []
@@ -369,7 +368,7 @@ def clean_html(html):
         # Skip lines that are likely header/footer content
         if not any(pattern in line_lower for pattern in skip_patterns):
             # Also skip lines that are just pipe characters or table remnants
-            if line.strip() not in ["|", "||", "|||", "||||", "|||||", "||||||"]:
+            if line.strip() not in ("|", "||", "|||", "||||", "|||||", "||||||"):
                 filtered_lines.append(line)
 
     markdown = "\n".join(filtered_lines)
@@ -379,9 +378,7 @@ def clean_html(html):
     markdown = re.sub(
         r"^\s*\|\s*$", "", markdown, flags=re.MULTILINE
     )  # Remove lines with just |
-    markdown = re.sub(r"\s*\|\s*", " ", markdown)  # Replace single | with space
-
-    return markdown.strip()
+    return re.sub(r"\s*\|\s*", " ", markdown).strip()  # Replace single | with space
 
 
 def save_queue_to_file():
@@ -614,7 +611,7 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 # Load previously visited URLs
-if os.path.exists(VISITED_FILE):
+if Path(VISITED_FILE).exists():
     with open(VISITED_FILE, "r", encoding="utf-8") as f:
         visited = set(line.strip() for line in f if line.strip())
     print(f"📚 Loaded {len(visited)} previously visited URLs")
@@ -627,7 +624,7 @@ queue_loaded = False
 
 # First check if there's a saved queue file.
 # Queue loading section:
-if os.path.exists(QUEUE_FILE):
+if Path(QUEUE_FILE).exists():
     with open(QUEUE_FILE, "r", encoding="utf-8") as f:
         file_urls = [line.strip() for line in f if line.strip()]
         if file_urls:
@@ -717,8 +714,7 @@ finally:
             break
 
     with open(QUEUE_FILE, "w", encoding="utf-8") as f:
-        for item in remaining_urls:
-            f.write(item + "\n")
+        f.writelines(item + "\n" for item in remaining_urls)
 
     print(f"\n📊 Total pages crawled: {pages_crawled}")
     print(f"📁 Queue saved to {QUEUE_FILE} ({len(remaining_urls)} URLs remaining)")

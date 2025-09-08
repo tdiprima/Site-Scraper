@@ -34,10 +34,7 @@ def analyze_text_content(content, filename):
         issues.append(f"Contains {null_count} null bytes (\\x00)")
 
     # Check for control characters (except common ones like \n, \t, \r)
-    control_chars = []
-    for i, char in enumerate(content):
-        if unicodedata.category(char)[0] == "C" and char not in "\n\t\r":
-            control_chars.append((char, i, ord(char)))
+    control_chars = [(char, i, ord(char)) for i, char in enumerate(content) if unicodedata.category(char)[0] == "C" and char not in "\n\t\r"]
 
     if control_chars:
         unique_controls = set([c[0] for c in control_chars])
@@ -63,7 +60,7 @@ def analyze_text_content(content, filename):
     for char in json_breakers:
         if char in content:
             count = content.count(char)
-            found_breakers.append(f"{repr(char)}({count})")
+            found_breakers.append(f"{char!r}({count})")
     if found_breakers:
         issues.append(f"JSON-sensitive characters: {found_breakers}")
 
@@ -115,8 +112,7 @@ def analyze_document(file_path):
             if enc is None:
                 continue
             try:
-                with open(file_path, "r", encoding=enc, errors="replace") as f:
-                    content = f.read()
+                content = Path(file_path).read_text(encoding=enc, errors="replace")
                 results["encoding"] = enc
                 break
             except (UnicodeDecodeError, UnicodeError):
@@ -146,7 +142,7 @@ def analyze_document(file_path):
                 )
 
     except Exception as e:
-        results["issues"].append(f"Error analyzing file: {str(e)}")
+        results["issues"].append(f"Error analyzing file: {e}")
 
     return results
 

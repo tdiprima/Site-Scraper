@@ -7,6 +7,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from datetime import datetime
+from pathlib import Path
 
 
 def parse_log_file(log_content):
@@ -239,10 +240,9 @@ def main():
     # Try to read from console output saved to file
     log_file = "crawl_output.log"
 
-    if os.path.exists(log_file):
+    if Path(log_file).exists():
         print(f"Reading log file: {log_file}")
-        with open(log_file, "r", encoding="utf-8") as f:
-            log_content = f.read()
+        log_content = Path(log_file).read_text(encoding="utf-8")
     else:
         print(f"\n⚠️  Log file '{log_file}' not found!")
         print("\nTo capture the crawl output, run the crawler like this:")
@@ -257,7 +257,7 @@ def main():
 
     # Also analyze the actual output files
     output_dir = "tcia_scrape_output"
-    if os.path.exists(output_dir):
+    if Path(output_dir).exists():
         files = os.listdir(output_dir)
         print("\n📁 OUTPUT FILES:")
         print(f"   Total markdown files created: {len(files)}")

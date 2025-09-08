@@ -102,7 +102,7 @@ def test_crawl():
         src = script.get("src", "")
         if any(
             framework in src.lower()
-            for framework in ["react", "angular", "vue", "jquery"]
+            for framework in ("react", "angular", "vue", "jquery")
         ):
             logger.info(f"Found JS framework: {src}")
 

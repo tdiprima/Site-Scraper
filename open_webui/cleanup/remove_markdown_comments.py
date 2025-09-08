@@ -25,7 +25,7 @@ def remove_first_line(file_path):
         else:
             print(f"Skipped: {file_path} (first line is not a markdown comment)")
     except Exception as e:
-        print(f"Error processing {file_path}: {str(e)}")
+        print(f"Error processing {file_path}: {e}")
 
 
 # Directory path

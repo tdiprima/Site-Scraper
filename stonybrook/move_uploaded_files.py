@@ -87,7 +87,7 @@ def move_files_to_uploaded_folder(
                 print(f"Progress: {moved_count}/{total_files} files moved...")
 
         except Exception as e:
-            print(f"Error moving {file_path}: {str(e)}")
+            print(f"Error moving {file_path}: {e}")
             error_count += 1
 
     # Print summary

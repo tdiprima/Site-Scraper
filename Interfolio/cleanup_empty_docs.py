@@ -136,11 +136,7 @@ def list_empty_files(docs_folder):
         logger.error(f"Documentation folder not found: {docs_folder}")
         return
 
-    empty_files = []
-
-    for filepath in docs_path.glob("*.md"):
-        if check_file_for_empty_content(filepath):
-            empty_files.append(filepath.name)
+    empty_files = [filepath.name for filepath in docs_path.glob("*.md") if check_file_for_empty_content(filepath)]
 
     if empty_files:
         logger.info(f"\nFound {len(empty_files)} files with empty content:")

@@ -10,7 +10,7 @@ print("=== Performance Test ===")
 test_query = "COVID-19 Data Commons"
 
 # Test with different k values
-for k in [10, 50, 100, 500, 1000]:
+for k in (10, 50, 100, 500, 1000):
     start = time.time()
     results = collection.query(query_texts=[test_query], n_results=k)
     elapsed = time.time() - start

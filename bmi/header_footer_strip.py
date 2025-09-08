@@ -4,6 +4,7 @@ Drop it in the directory with your cleaned .md files and run it - job's done.
 
 import glob
 import os
+from pathlib import Path
 
 
 def strip_header_footer(path):
@@ -55,7 +56,7 @@ def strip_header_footer(path):
 
 
 def main():
-    md_files = glob.glob(os.path.join(os.getcwd(), "*.md"))
+    md_files = glob.glob(os.path.join(Path.cwd(), "*.md"))
     if not md_files:
         print("No markdown files found in this directory.")
         return

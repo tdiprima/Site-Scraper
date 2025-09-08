@@ -3,6 +3,7 @@ Script to rename files in a directory by replacing spaces with underscores.
 """
 
 import os
+from pathlib import Path
 
 
 def rename_files_with_underscores(directory):
@@ -13,7 +14,7 @@ def rename_files_with_underscores(directory):
         directory (str): Path to the directory containing files to rename
     """
     # Check if directory exists
-    if not os.path.exists(directory):
+    if not Path(directory).exists():
         print(f"Error: Directory '{directory}' does not exist.")
         return
 
@@ -44,7 +45,7 @@ def rename_files_with_underscores(directory):
                 new_path = os.path.join(directory, new_filename)
 
                 # Check if a file with the new name already exists
-                if os.path.exists(new_path):
+                if Path(new_path).exists():
                     print(
                         f"Warning: Cannot rename '{filename}' - '{new_filename}' already exists."
                     )

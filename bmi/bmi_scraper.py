@@ -7,6 +7,7 @@ Respects robots.txt and skips PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX files.
 import os
 import sys
 import urllib.robotparser
+from pathlib import Path
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -37,7 +38,7 @@ SKIP_EXTENSIONS = [
 ]
 
 # Setup
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
 # Setup robots.txt parser
 ROBOTS_URL = f"{ALLOWED_URL_PREFIX}robots.txt"
@@ -52,14 +53,14 @@ except Exception as e:
     rp = None  # Fail open: allow everything
 
 # Load or initialize visited set
-if os.path.exists(VISITED_FILE):
+if Path(VISITED_FILE).exists():
     with open(VISITED_FILE, "r", encoding="utf-8") as f:
         visited = set(line.strip() for line in f if line.strip())
 else:
     visited = set()
 
 # Load or initialize queue
-if os.path.exists(QUEUE_FILE):
+if Path(QUEUE_FILE).exists():
     with open(QUEUE_FILE, "r", encoding="utf-8") as f:
         queue = [line.strip() for line in f if line.strip()]
 else:
@@ -150,8 +151,7 @@ except KeyboardInterrupt:
 
 finally:
     with open(QUEUE_FILE, "w", encoding="utf-8") as f:
-        for item in queue:
-            f.write(item + "\n")
+        f.writelines(item + "\n" for item in queue)
 
     print(f"📁 Queue saved to {QUEUE_FILE}")
     print(f"📁 Visited URLs saved to {VISITED_FILE}")

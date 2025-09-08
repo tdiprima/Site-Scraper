@@ -23,9 +23,9 @@ def show_chunk_samples(chunks, label, n=3):
 
 
 if __name__ == "__main__":
+    from pathlib import Path
     # Insert scraped page text here
-    with open("features_plugin_events.md", "r", encoding="utf-8") as f:
-        text = f.read()
+    text = Path("features_plugin_events.md").read_text(encoding="utf-8")
 
     # Config 1: 1000/150
     chunks_1000_150 = chunk_text(text, chunk_size=1000, chunk_overlap=150)
