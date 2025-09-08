@@ -34,7 +34,7 @@ for name, email, settings_json in users:
 
         if top_k != "default" and top_k < 50:
             problem_users.append((name, email))
-    except:
+    except Exception:
         pass
 
 if problem_users:

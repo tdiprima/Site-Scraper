@@ -136,7 +136,7 @@ class OpenWebUIClient:
                 time.sleep(delay_between_questions)
 
         print(f"\n{'=' * 80}")
-        print(f"Completed! Results saved to:")
+        print("Completed! Results saved to:")
         print(f"  - JSON: {output_file}")
         print(f"  - Text: {output_file.replace('.json', '_readable.txt')}")
 
@@ -160,7 +160,7 @@ class OpenWebUIClient:
             for i, result in enumerate(results, 1):
                 f.write(f"Question {i}:\n")
                 f.write(f"{result['question']}\n\n")
-                f.write(f"Answer:\n")
+                f.write("Answer:\n")
                 f.write(f"{result['answer']}\n")
                 f.write("\n" + "-" * 80 + "\n\n")
 

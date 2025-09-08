@@ -105,7 +105,7 @@ def diagnose_site(url):
                 if resp.status_code == 200:
                     print(f"   ✓ Found sitemap at: {sitemap_url}")
                     break
-            except:
+            except Exception:
                 pass
         else:
             print("   - No sitemap found")

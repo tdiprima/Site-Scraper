@@ -9,7 +9,6 @@ python tcia-requests-html-crawler.py
 
 import hashlib
 import os
-import time
 from collections import deque
 from urllib.parse import urljoin, urlparse
 
@@ -336,7 +335,7 @@ class TCIARequestsHTMLCrawler:
 
         # Final report
         files = os.listdir(self.output_dir)
-        logger.info(f"Crawling complete!")
+        logger.info("Crawling complete!")
         logger.info(f"Pages scraped: {processed}")
         logger.info(f"Files created: {len(files)}")
 

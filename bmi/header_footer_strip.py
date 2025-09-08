@@ -12,7 +12,7 @@ def strip_header_footer(path):
 
     # find header range
     start_idx = next(
-        (i for i, l in enumerate(lines) if "Skip to main content" in l), None
+        (i for i, line in enumerate(lines) if "Skip to main content" in line), None
     )
     end_idx = None
     if start_idx is not None:
@@ -34,20 +34,20 @@ def strip_header_footer(path):
     footer_idx = next(
         (
             i
-            for i, l in enumerate(lines)
-            if any(l.startswith(p) for p in footer_patterns)
+            for i, line in enumerate(lines)
+            if any(line.startswith(p) for p in footer_patterns)
         ),
         None,
     )
 
     # build filtered lines
     new_lines = []
-    for i, l in enumerate(lines):
+    for i, line in enumerate(lines):
         if start_idx is not None and start_idx <= i <= end_idx:
             continue
         if footer_idx is not None and i >= footer_idx:
             continue
-        new_lines.append(l)
+        new_lines.append(line)
 
     # overwrite file
     with open(path, "w", encoding="utf-8") as f:

@@ -100,7 +100,7 @@ def analyze_failures(results):
     print("=" * 80)
 
     # Basic statistics
-    print(f"\n📊 BASIC STATISTICS:")
+    print("\n📊 BASIC STATISTICS:")
     print(f"   Total pages scraped: {len(results['scraped_pages'])}")
     print(f"   Total files saved: {len(results['saved_files'])}")
     print(f"   Total errors: {len(results['errors'])}")
@@ -108,7 +108,7 @@ def analyze_failures(results):
     # Depth analysis
     if results["scraped_pages"]:
         depth_counter = Counter(page["depth"] for page in results["scraped_pages"])
-        print(f"\n📏 DEPTH DISTRIBUTION:")
+        print("\n📏 DEPTH DISTRIBUTION:")
         for depth in sorted(depth_counter.keys()):
             print(f"   Depth {depth}: {depth_counter[depth]} pages")
 
@@ -117,7 +117,7 @@ def analyze_failures(results):
         avg_urls = sum(results["url_counts"]) / len(results["url_counts"])
         max_urls = max(results["url_counts"])
         min_urls = min(results["url_counts"])
-        print(f"\n🔗 URL DISCOVERY:")
+        print("\n🔗 URL DISCOVERY:")
         print(f"   Average URLs per page: {avg_urls:.1f}")
         print(f"   Max URLs found on a page: {max_urls}")
         print(f"   Min URLs found on a page: {min_urls}")
@@ -156,7 +156,7 @@ def analyze_failures(results):
                 print(f"      - {err}")
 
     # Skipped URLs analysis
-    print(f"\n🚫 SKIPPED URLS:")
+    print("\n🚫 SKIPPED URLS:")
 
     # External domains
     if results["skipped_external"]:
@@ -167,7 +167,7 @@ def analyze_failures(results):
 
                 domain = urlparse(url).netloc
                 external_domains[domain] += 1
-            except:
+            except Exception:
                 pass
 
         print(
@@ -228,7 +228,7 @@ def analyze_failures(results):
             len(results["scraped_pages"]) / duration if duration > 0 else 0
         )
 
-        print(f"\n⏱️  PERFORMANCE:")
+        print("\n⏱️  PERFORMANCE:")
         print(f"   Crawl duration: {duration:.1f} seconds")
         print(f"   Average speed: {pages_per_second:.2f} pages/second")
 
@@ -259,7 +259,7 @@ def main():
     output_dir = "tcia_scrape_output"
     if os.path.exists(output_dir):
         files = os.listdir(output_dir)
-        print(f"\n📁 OUTPUT FILES:")
+        print("\n📁 OUTPUT FILES:")
         print(f"   Total markdown files created: {len(files)}")
 
         # Check file sizes

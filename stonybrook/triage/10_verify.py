@@ -35,7 +35,7 @@ except Exception as e:
 try:
     old_collection = client.get_collection(name="8481691e-f9f2-4653-9643-4910e2e3499b")
     print("⚠️  Old collection still exists!")
-except:
+except Exception:
     print("✓ Old collection successfully deleted")
 
 print("\n=== Summary ===")

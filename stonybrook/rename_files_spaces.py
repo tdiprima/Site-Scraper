@@ -65,7 +65,7 @@ def rename_files_with_underscores(directory):
         return
 
     # Print summary
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  Files renamed: {renamed_count}")
     print(f"  Files skipped: {skipped_count}")
     print(f"  Total files processed: {len(files)}")

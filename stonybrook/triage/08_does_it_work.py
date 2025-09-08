@@ -5,14 +5,14 @@ import chromadb
 client = chromadb.PersistentClient(path="/app/backend/data/vector_db")
 collection = client.get_collection(name="3c0b5e64-0cde-44f5-b785-3ed5ad8af070")
 
-print(f"=== Knowledge Base Status ===")
-print(f"✓ Collection exists: Yes")
+print("=== Knowledge Base Status ===")
+print("✓ Collection exists: Yes")
 print(f"✓ Document count: {collection.count()}")
-print(f"✓ Collection ID: 3c0b5e64-0cde-44f5-b785-3ed5ad8af070")
+print("✓ Collection ID: 3c0b5e64-0cde-44f5-b785-3ed5ad8af070")
 
 # Test a query
 results = collection.query(query_texts=["What is Stony Brook?"], n_results=2)
-print(f"✓ Query works: Yes")
+print("✓ Query works: Yes")
 print(f"✓ Sample result: {results['metadatas'][0][0].get('source', 'Unknown')}")
 
 print("\n=== How to use your knowledge base ===")

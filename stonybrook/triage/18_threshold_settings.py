@@ -1,5 +1,4 @@
 # Investigate Open WebUI's configuration files and database tables to locate similarity threshold settings.
-import json
 import os
 import sqlite3
 
@@ -38,7 +37,7 @@ for table in tables:
                 ):
                     print(f"Found potential config in {table_name}: {row}")
                     config_found = True
-    except Exception as e:
+    except Exception:
         pass
 
 conn.close()

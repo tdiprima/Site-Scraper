@@ -230,7 +230,7 @@ class TCIACrawler:
 
         # Final report
         files = os.listdir(self.output_dir)
-        logger.info(f"Crawling complete!")
+        logger.info("Crawling complete!")
         logger.info(f"Pages scraped: {processed}")
         logger.info(f"Files created: {len(files)}")
 

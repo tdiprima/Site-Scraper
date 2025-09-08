@@ -4,14 +4,11 @@ Interfolio Documentation Scraper for RAG Server
 Scrapes documentation from product-help.interfolio.com and saves as markdown files
 """
 
-import hashlib
 import os
 import re
 import time
-from datetime import datetime
 from urllib.parse import urljoin, urlparse
 
-import requests
 from bs4 import BeautifulSoup
 from loguru import logger
 from markdownify import markdownify as md
@@ -271,7 +268,7 @@ def main():
         scraper.scrape_site()
 
         # Summary
-        logger.info(f"\nScraping completed!")
+        logger.info("\nScraping completed!")
         logger.info(f"Output directory: {output_dir}")
         logger.info(f"Total pages scraped: {len(scraper.visited_urls)}")
         logger.info(f"Failed pages: {len(scraper.failed_urls)}")

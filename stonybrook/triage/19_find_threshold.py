@@ -16,7 +16,7 @@ for config in configs:
         config_data = json.loads(config[1])
         print("\n=== Main Config ===")
         print(json.dumps(config_data, indent=2))
-    except:
+    except Exception:
         pass
 
 # Get user-specific settings
@@ -41,7 +41,7 @@ if user_data:
             print(
                 f"relevance_threshold: {settings['ui']['params'].get('relevance_threshold', 'not set')}"
             )
-    except:
+    except Exception:
         pass
 
 conn.close()

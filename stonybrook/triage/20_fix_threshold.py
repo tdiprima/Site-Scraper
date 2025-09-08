@@ -34,8 +34,8 @@ cursor.execute(
 conn.commit()
 
 print("\n✅ SUCCESS! Your RAG settings have been updated:")
-print(f"- top_k: 20 (increased from 10)")
-print(f"- relevance_threshold: 0.0 (no filtering)")
+print("- top_k: 20 (increased from 10)")
+print("- relevance_threshold: 0.0 (no filtering)")
 
 conn.close()
 

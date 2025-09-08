@@ -17,7 +17,7 @@ if os.path.exists(CLEANED_DIR):
     print(f"Removing old '{CLEANED_DIR}' dir...")
     shutil.rmtree(CLEANED_DIR)
 
-print(f"\n[1/3] Running the web scraper...")
+print("\n[1/3] Running the web scraper...")
 subprocess.run(["python3", SCRAPER_SCRIPT], check=True)
 
 
@@ -32,7 +32,7 @@ def clean_markdown_links_and_images(text):
     return text
 
 
-print(f"\n[2/3] Cleaning markdown links and images...")
+print("\n[2/3] Cleaning markdown links and images...")
 
 os.makedirs(CLEANED_DIR, exist_ok=True)
 md_files = list(Path(RAW_DIR).glob("*.md"))
@@ -57,7 +57,7 @@ def strip_header_footer(path):
 
     # find header range
     start_idx = next(
-        (i for i, l in enumerate(lines) if "Skip to main content" in l), None
+        (i for i, line in enumerate(lines) if "Skip to main content" in line), None
     )
     end_idx = None
     if start_idx is not None:
@@ -99,7 +99,7 @@ def strip_header_footer(path):
         f.writelines(new_lines)
 
 
-print(f"\n[3/3] Stripping header/footer from cleaned files...")
+print("\n[3/3] Stripping header/footer from cleaned files...")
 cleaned_md_files = list(Path(CLEANED_DIR).glob("*.md"))
 if not cleaned_md_files:
     print(f"No cleaned Markdown files found in '{CLEANED_DIR}'!")

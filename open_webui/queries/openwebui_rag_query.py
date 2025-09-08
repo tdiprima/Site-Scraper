@@ -215,7 +215,7 @@ class OpenWebUIClient:
             for i, result in enumerate(results, 1):
                 f.write(f"Question {i}:\n")
                 f.write(f"Q: {result['question']}\n\n")
-                f.write(f"Answer:\n")
+                f.write("Answer:\n")
                 f.write(f"A: {result['answer']}\n\n")
                 f.write(f"Model: {result['model']}\n")
                 f.write(f"Timestamp: {result['timestamp']}\n")
@@ -264,7 +264,7 @@ def main():
             return
 
     # Verify configuration
-    print(f"\nConfiguration:")
+    print("\nConfiguration:")
     print(f"  Base URL: {BASE_URL}")
     print(
         f"  API Key: {'*' * (len(API_KEY) - 4) + API_KEY[-4:] if len(API_KEY) > 4 else 'Not set'}"

@@ -44,8 +44,8 @@ def get_documents_in_collection(collection_id):
     try:
         # Try different possible endpoints for documents
         endpoints_to_try = [
-            f"/api/v1/files/",  # All files endpoint
-            f"/api/v1/documents/",  # All documents endpoint
+            "/api/v1/files/",  # All files endpoint
+            "/api/v1/documents/",  # All documents endpoint
         ]
 
         for endpoint in endpoints_to_try:
@@ -156,7 +156,7 @@ def analyze_collections():
 
         # Analyze document details
         if documents:
-            print(f"   📄 Sample documents:")
+            print("   📄 Sample documents:")
             for i, doc in enumerate(documents[:3]):  # Show first 3 documents
                 if isinstance(doc, dict):
                     doc_name = doc.get("name", doc.get("filename", "Unknown"))

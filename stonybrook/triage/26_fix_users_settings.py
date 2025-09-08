@@ -1,4 +1,5 @@
 import json
+import os
 import sqlite3
 
 conn = sqlite3.connect("/app/backend/data/webui.db")
@@ -72,7 +73,7 @@ for user_id, name, email, settings_json in users:
         error_count += 1
 
 conn.commit()
-print(f"\n✅ Summary:")
+print("\n✅ Summary:")
 print(f"   - Fixed existing users: {fixed_count}")
 print(f"   - Fixed OIDC users: {oidc_count}")
 print(f"   - Errors encountered: {error_count}")
@@ -81,8 +82,6 @@ print(f"   - Total users processed: {len(users)}")
 conn.close()
 
 print("\n=== PART 2: Creating Startup Script for Future OIDC Users ===")
-
-import os
 
 # Create a more robust startup fix script
 startup_script = """#!/bin/bash

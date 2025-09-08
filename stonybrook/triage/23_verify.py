@@ -21,7 +21,7 @@ print(f"- top_k_reranker: {rag['top_k_reranker']} (final results)")
 cursor.execute("SELECT settings FROM user WHERE email='tammy.diprima@stonybrook.edu'")
 settings = json.loads(cursor.fetchone()[0])
 
-print(f"\nYour user settings:")
+print("\nYour user settings:")
 print(f"- top_k: {settings['ui']['params']['top_k']}")
 print(
     f"- relevance_threshold: {settings['ui']['params'].get('relevance_threshold', 'not set')}"

@@ -69,16 +69,16 @@ def test_connection():
             if response.status_code == 200:
                 try:
                     data = response.json()
-                    print(f"   ✅ SUCCESS! Valid JSON returned")
+                    print("   ✅ SUCCESS! Valid JSON returned")
                     print(f"   Response preview: {str(data)[:200]}...")
                     return url, headers_no_auth, data
                 except json.JSONDecodeError:
-                    print(f"   ⚠️  Status 200 but invalid JSON")
+                    print("   ⚠️  Status 200 but invalid JSON")
                     print(f"   Response text: {response.text[:200]}...")
             elif response.status_code == 401:
-                print(f"   🔐 Authentication required")
+                print("   🔐 Authentication required")
             elif response.status_code == 404:
-                print(f"   ❌ Endpoint not found")
+                print("   ❌ Endpoint not found")
             else:
                 print(f"   ❓ Other status: {response.text[:100]}")
 
@@ -94,11 +94,11 @@ def test_connection():
                 if response.status_code == 200:
                     try:
                         data = response.json()
-                        print(f"   ✅ SUCCESS with API key! Valid JSON returned")
+                        print("   ✅ SUCCESS with API key! Valid JSON returned")
                         print(f"   Response preview: {str(data)[:200]}...")
                         return url, headers_with_bearer, data
                     except json.JSONDecodeError:
-                        print(f"   ⚠️  Status 200 but invalid JSON with API key")
+                        print("   ⚠️  Status 200 but invalid JSON with API key")
 
             except Exception as e:
                 print(f"   ❌ API key connection error: {e}")
@@ -116,11 +116,11 @@ def test_connection():
                 if response.status_code == 200:
                     try:
                         data = response.json()
-                        print(f"   ✅ SUCCESS with JWT! Valid JSON returned")
+                        print("   ✅ SUCCESS with JWT! Valid JSON returned")
                         print(f"   Response preview: {str(data)[:200]}...")
                         return url, headers_with_jwt, data
                     except json.JSONDecodeError:
-                        print(f"   ⚠️  Status 200 but invalid JSON with JWT")
+                        print("   ⚠️  Status 200 but invalid JSON with JWT")
 
             except Exception as e:
                 print(f"   ❌ JWT connection error: {e}")
@@ -157,11 +157,11 @@ def check_webui_version():
                     print(f"✅ Found info at {endpoint}:")
                     print(f"   {json.dumps(data, indent=2)}")
                     return
-                except:
+                except Exception:
                     print(f"✅ Found response at {endpoint}:")
                     print(f"   {response.text}")
                     return
-        except:
+        except Exception:
             continue
 
     print("❌ Could not find version/config info")

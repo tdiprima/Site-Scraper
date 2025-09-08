@@ -11,16 +11,16 @@ client = chromadb.PersistentClient(path="/app/backend/data/vector_db")
 
 # Delete the problematic collection
 collection_id = "3c0b5e64-0cde-44f5-b785-3ed5ad8af070"
-print(f"Deleting collection with mismatched embeddings...")
+print("Deleting collection with mismatched embeddings...")
 try:
     client.delete_collection(name=collection_id)
     print("✓ Deleted existing collection")
-except:
+except Exception:
     print("Collection already deleted")
 
 # Get the original collection data WITHOUT embeddings
 original_collection = client.get_collection(name="8481691e-f9f2-4653-9643-4910e2e3499b")
-print(f"\nFetching documents from original collection...")
+print("\nFetching documents from original collection...")
 all_data = original_collection.get(include=["documents", "metadatas"])
 
 # Deduplicate again
@@ -39,7 +39,7 @@ print(f"✓ Deduplicated to {len(unique_docs)} unique documents")
 
 # Create new collection WITHOUT specifying embeddings
 # This will let Open WebUI generate them with the correct model
-print(f"\nCreating new collection without embeddings...")
+print("\nCreating new collection without embeddings...")
 new_collection = client.create_collection(name=collection_id)
 
 # Add documents in batches without embeddings

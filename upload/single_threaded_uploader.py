@@ -395,7 +395,7 @@ def main():
     logger.info("=" * 60)
     logger.info("Open WebUI Single-Threaded Bulk File Uploader")
     logger.info("=" * 60)
-    logger.info(f"Configuration:")
+    logger.info("Configuration:")
     logger.info(f"  Base URL: {BASE_URL}")
     logger.info(f"  Collection ID: {COLLECTION_ID}")
     logger.info(f"  Max file size: {MAX_FILE_SIZE_MB} MB")

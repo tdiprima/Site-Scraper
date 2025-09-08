@@ -20,7 +20,7 @@ def detect_encoding(file_path):
             raw_data = f.read()
             result = chardet.detect(raw_data)
             return result["encoding"], result["confidence"]
-    except Exception as e:
+    except Exception:
         return None, 0
 
 
@@ -221,7 +221,7 @@ def main():
     print(f"Clean documents: {len(all_results) - len(problematic_files)}")
 
     if problematic_files:
-        print(f"\nMOST PROBLEMATIC FILES:")
+        print("\nMOST PROBLEMATIC FILES:")
         # Sort by number of issues
         sorted_problematic = sorted(
             problematic_files, key=lambda x: len(x["issues"]), reverse=True

@@ -28,7 +28,7 @@ user_id = webui_cursor.fetchone()[0]
 print(f"Using user_id: {user_id}")
 
 # Insert documents into the document table
-print(f"\nAdding document entries to Open WebUI database...")
+print("\nAdding document entries to Open WebUI database...")
 current_timestamp = int(time.time())
 
 for i, (doc_id, metadata) in enumerate(
@@ -83,7 +83,7 @@ print("\n✓ Documents linked to knowledge base!")
 print("Refresh the Open WebUI page - you should now see content in 'Stony Brook Clean'")
 
 # If you want to see what sources were deduplicated:
-print(f"\nSample of unique sources in the collection:")
+print("\nSample of unique sources in the collection:")
 sources = set()
 all_metadata = collection.get(include=["metadatas"])["metadatas"]
 for meta in all_metadata[:10]:

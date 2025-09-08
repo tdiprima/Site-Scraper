@@ -55,9 +55,9 @@ class RAGOptimizedScraper:
         self.robot_parser.set_url(robots_url)
         try:
             self.robot_parser.read()
-            logger.info(f"Successfully loaded robots.txt")
-        except:
-            logger.warning(f"Could not load robots.txt")
+            logger.info("Successfully loaded robots.txt")
+        except Exception:
+            logger.warning("Could not load robots.txt")
 
     def can_fetch(self, url):
         """Check if URL can be fetched according to robots.txt"""

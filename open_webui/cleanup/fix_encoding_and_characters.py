@@ -279,7 +279,7 @@ def main():
         from collections import Counter
 
         fix_counts = Counter(all_fixes)
-        print(f"\nMost common fixes applied:")
+        print("\nMost common fixes applied:")
         for fix, count in fix_counts.most_common():
             print(f"  {count:3d}x {fix}")
 
@@ -290,11 +290,11 @@ def main():
             problem_files.append(result)
 
     if problem_files:
-        print(f"\nFiles that still need attention:")
+        print("\nFiles that still need attention:")
         for result in problem_files:
             print(f"  - {result['filename']}: {result['error']}")
     else:
-        print(f"\n🎉 All files successfully cleaned!")
+        print("\n🎉 All files successfully cleaned!")
         print(
             "Your documents should now work better with Open WebUI's knowledge collection."
         )

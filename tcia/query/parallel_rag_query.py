@@ -179,7 +179,7 @@ class OpenWebUIClient:
         print(f"Completed {total_questions} questions in {total_time:.2f} seconds")
         print(f"Average time per question: {total_time/total_questions:.2f}s")
         print(f"Speedup vs sequential: {(total_questions * 2) / total_time:.1f}x")
-        print(f"\nResults saved to:")
+        print("\nResults saved to:")
         print(f"  - JSON: {output_file}")
         print(f"  - Text: {output_file.replace('.json', '_readable.txt')}")
 
@@ -238,7 +238,7 @@ class OpenWebUIClient:
                 time.sleep(delay_between_questions)
 
         print(f"\n{'=' * 80}")
-        print(f"Completed! Results saved to:")
+        print("Completed! Results saved to:")
         print(f"  - JSON: {output_file}")
         print(f"  - Text: {output_file.replace('.json', '_readable.txt')}")
 
@@ -262,7 +262,7 @@ class OpenWebUIClient:
             for i, result in enumerate(results, 1):
                 f.write(f"Question {i}:\n")
                 f.write(f"{result['question']}\n\n")
-                f.write(f"Answer:\n")
+                f.write("Answer:\n")
                 f.write(f"{result['answer']}\n")
                 if "processing_time" in result:
                     f.write(

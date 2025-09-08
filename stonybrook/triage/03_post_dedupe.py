@@ -53,8 +53,8 @@ try:
         existing = client.get_collection(name=new_knowledge_id)
         print(f"\nDeleting existing collection: {new_knowledge_id}")
         client.delete_collection(name=new_knowledge_id)
-    except:
-        print(f"\nNo existing collection to delete")
+    except Exception:
+        print("\nNo existing collection to delete")
 
     # Create new collection
     print(f"\nCreating new collection: {new_knowledge_id}")
@@ -102,7 +102,7 @@ try:
 
     # Verify the new collection
     final_count = new_collection.count()
-    print(f"\n✓ Successfully created deduplicated collection!")
+    print("\n✓ Successfully created deduplicated collection!")
     print(f"  Collection name: {new_knowledge_id}")
     print(f"  Document count: {final_count}")
 
@@ -115,16 +115,16 @@ try:
     result = cursor.fetchone()
     if result:
         print(f"  Internal ID: {result[0]}")
-        print(f"  ✓ Collection is properly registered in ChromaDB")
+        print("  ✓ Collection is properly registered in ChromaDB")
     conn.close()
 
     # Show sample of deduplicated sources
-    print(f"\nSample of unique sources:")
+    print("\nSample of unique sources:")
     sample_sources = list(unique_docs.keys())[:5]
     for source in sample_sources:
         print(f"  - {source}")
 
-    print(f"\n🎉 SUCCESS! 'Stony Brook Clean' should now appear in Open WebUI!")
+    print("\n🎉 SUCCESS! 'Stony Brook Clean' should now appear in Open WebUI!")
     print("Please refresh your Open WebUI page to see it in the Knowledge section.")
 
 except Exception as e:

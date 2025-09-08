@@ -10,9 +10,8 @@ import os
 import sys
 import time
 from collections import deque
-from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Optional, Set, Tuple
-from urllib.parse import unquote, urljoin, urlparse
+from typing import Set
+from urllib.parse import urljoin, urlparse
 from urllib.robotparser import RobotFileParser
 
 import html2text
@@ -110,7 +109,7 @@ class TCIACrawler:
             if self.robot_parser and not self.robot_parser.can_fetch("*", url):
                 logger.debug(f"Robots.txt disallows: {url}")
                 return False
-        except:
+        except Exception:
             # If robots.txt check fails, allow the URL
             pass
 
@@ -174,7 +173,7 @@ class TCIACrawler:
                 try:
                     for element in main_content.select(selector):
                         element.decompose()
-                except:
+                except Exception:
                     pass
 
         return main_content
