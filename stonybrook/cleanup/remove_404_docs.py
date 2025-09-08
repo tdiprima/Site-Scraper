@@ -4,7 +4,6 @@ Script to remove documents that contain 404 error messages.
 Deletes files that contain the exact text "Oops! That's a 404..."
 """
 
-import os
 from pathlib import Path
 
 

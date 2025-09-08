@@ -1,5 +1,4 @@
 # Investigate Open WebUI's configuration files and database tables to locate similarity threshold settings.
-import os
 import sqlite3
 from pathlib import Path
 

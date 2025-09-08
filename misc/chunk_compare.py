@@ -24,6 +24,7 @@ def show_chunk_samples(chunks, label, n=3):
 
 if __name__ == "__main__":
     from pathlib import Path
+
     # Insert scraped page text here
     text = Path("features_plugin_events.md").read_text(encoding="utf-8")
 

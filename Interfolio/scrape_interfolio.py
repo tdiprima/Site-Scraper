@@ -93,7 +93,9 @@ class InterfolioScraper:
                 parent.decompose()
 
         # Remove "Related Articles" sections
-        for element in soup.find_all(text=re.compile(r"Related Articles", re.IGNORECASE)):
+        for element in soup.find_all(
+            text=re.compile(r"Related Articles", re.IGNORECASE)
+        ):
             parent = element.parent
             while parent and parent.name not in ("section", "div", "article"):
                 parent = parent.parent

@@ -34,7 +34,11 @@ def analyze_text_content(content, filename):
         issues.append(f"Contains {null_count} null bytes (\\x00)")
 
     # Check for control characters (except common ones like \n, \t, \r)
-    control_chars = [(char, i, ord(char)) for i, char in enumerate(content) if unicodedata.category(char)[0] == "C" and char not in "\n\t\r"]
+    control_chars = [
+        (char, i, ord(char))
+        for i, char in enumerate(content)
+        if unicodedata.category(char)[0] == "C" and char not in "\n\t\r"
+    ]
 
     if control_chars:
         unique_controls = set([c[0] for c in control_chars])
