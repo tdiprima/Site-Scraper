@@ -13,8 +13,7 @@ cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 tables = cursor.fetchall()
 print("All tables:", [t[0] for t in tables])
 
-# Check for any config-related data
-config_found = False
+# Check for any config-related data in database
 for table in tables:
     table_name = table[0]
     try:
@@ -36,9 +35,11 @@ for table in tables:
                     for term in ("rag", "retriev", "threshold", "top_k", "similarity")
                 ):
                     print(f"Found potential config in {table_name}: {row}")
-                    config_found = True
+                    break
     except Exception:
         pass
+else:
+    print("\nNo RAG configuration found in database tables.")
 
 conn.close()
 
@@ -64,8 +65,17 @@ for path in config_paths:
                         for term in ("threshold", "top_k", "rag", "score", "similarity")
                     ):
                         print(line.strip())
+                        break
         except Exception as e:
             print(f"Could not read: {e}")
+else:
+    print("\nNo configuration files found at expected locations.")
+
+print("\n=== CONFIGURATION SUMMARY ===")
+print("Based on the search above:")
+print("- Check database tables for any RAG settings found")
+print("- Review configuration files for threshold parameters")
+print("- If no config found, settings may be in Open WebUI's UI")
 
 print("\n=== IMMEDIATE FIX ===")
 print("Since searches ARE finding documents but with high distances,")
