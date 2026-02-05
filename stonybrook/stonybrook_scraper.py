@@ -7,6 +7,7 @@ Respects robots.txt and skips PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, PNG, JPG, JP
 
 Dependencies: requests, beautifulsoup4, markdownify
 """
+
 import os
 import re
 import shutil
@@ -46,8 +47,28 @@ QUEUE_SAVE_INTERVAL = 30  # Save queue every 30 seconds
 THREAD_TIMEOUT = 30  # If no work for 30 seconds, thread exits
 
 # File extensions to skip
-SKIP_EXTENSIONS = [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".png", ".jpg", ".jpeg"]
-SKIP_PATTERNS = ["calendar", "event", "search", "print", "/pdf/", "export", "feed", "rss"]
+SKIP_EXTENSIONS = [
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".ppt",
+    ".pptx",
+    ".xls",
+    ".xlsx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+]
+SKIP_PATTERNS = [
+    "calendar",
+    "event",
+    "search",
+    "print",
+    "/pdf/",
+    "export",
+    "feed",
+    "rss",
+]
 
 # Setup
 Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
@@ -76,7 +97,9 @@ try:
     rp.read()
     test_allowed = rp.can_fetch(USER_AGENT, START_URL)
     if not test_allowed:
-        print("⚠️  robots.txt not available or not allowing crawling. Ignoring robots.txt and proceeding.")
+        print(
+            "⚠️  robots.txt not available or not allowing crawling. Ignoring robots.txt and proceeding."
+        )
         rp = None
     else:
         print("✅ robots.txt loaded.")
@@ -123,52 +146,92 @@ def looks_like_trap(url):
 
 def clean_html(html):
     soup = BeautifulSoup(html, "html.parser")
-    
+
     # Remove headers, footers, navs by tag name
-    for tag in soup.find_all(['header', 'footer', 'nav', 'aside']):
+    for tag in soup.find_all(["header", "footer", "nav", "aside"]):
         tag.decompose()
-    
+
     # Remove common header/footer patterns by class or id
     header_footer_patterns = [
         # Common class patterns
-        {'class': lambda x: x and any(pattern in ' '.join(x).lower() for pattern in 
-            ['header', 'footer', 'navigation', 'navbar', 'topbar', 'top-bar', 
-             'breadcrumb', 'menu', 'sidebar', 'social', 'copyright', 'meta',
-             'toolbar', 'masthead', 'banner', 'top-navigation', 'main-nav',
-             'site-header', 'site-footer', 'page-header', 'page-footer'])},
+        {
+            "class": lambda x: x
+            and any(
+                pattern in " ".join(x).lower()
+                for pattern in [
+                    "header",
+                    "footer",
+                    "navigation",
+                    "navbar",
+                    "topbar",
+                    "top-bar",
+                    "breadcrumb",
+                    "menu",
+                    "sidebar",
+                    "social",
+                    "copyright",
+                    "meta",
+                    "toolbar",
+                    "masthead",
+                    "banner",
+                    "top-navigation",
+                    "main-nav",
+                    "site-header",
+                    "site-footer",
+                    "page-header",
+                    "page-footer",
+                ]
+            )
+        },
         # Common ID patterns
-        {'id': lambda x: x and any(pattern in x.lower() for pattern in 
-            ['header', 'footer', 'nav', 'navigation', 'menu', 'breadcrumb',
-             'topbar', 'top-bar', 'sidebar', 'banner', 'masthead'])}
+        {
+            "id": lambda x: x
+            and any(
+                pattern in x.lower()
+                for pattern in [
+                    "header",
+                    "footer",
+                    "nav",
+                    "navigation",
+                    "menu",
+                    "breadcrumb",
+                    "topbar",
+                    "top-bar",
+                    "sidebar",
+                    "banner",
+                    "masthead",
+                ]
+            )
+        },
     ]
-    
+
     # Note: Removed 'column', 'columns', 'col-', 'grid', 'row' from the patterns above
     # We'll handle these separately to extract their content properly
 
     for pattern in header_footer_patterns:
         for element in soup.find_all(attrs=pattern):
             element.decompose()
-    
+
     # Remove elements that commonly contain navigation
-    for tag in soup.find_all(['ul', 'ol', 'div']):
+    for tag in soup.find_all(["ul", "ol", "div"]):
         # Check if it's likely a menu (lots of links, little text)
-        links = tag.find_all('a')
+        links = tag.find_all("a")
         if len(links) > 5:
             text_content = tag.get_text(strip=True)
-            link_text = ''.join([a.get_text(strip=True) for a in links])
+            link_text = "".join([a.get_text(strip=True) for a in links])
             # If most of the content is link text, it's probably navigation
             if len(link_text) > 0 and len(link_text) / max(len(text_content), 1) > 0.7:
                 tag.decompose()
-    
+
     # Find main content
     selectors = [
-        ('main', {}),
-        ('div', {'role': 'main'}),
-        ('div', {'class': 'region-content'}),
-        ('article', {}),
-        ('div', {'id': 'content'}),
-        ('div', {'class': lambda x: x and 'content' in ' '.join(x).lower()}),
-        ('div', {'class': lambda x: x and 'main' in ' '.join(x).lower()})
+        ("main", {}),
+        ("div", {"role": "main"}),
+        ("div", {"class": "region-content"}),
+        ("article", {}),
+        ("div", {"id": "content"}),
+        ("div", {"class": lambda x: x and "content" in " ".join(x).lower()}),
+        ("div", {"class": lambda x: x and "main" in " ".join(x).lower()}),
     ]
     main_content = None
     for tag, attrs in selectors:
@@ -176,55 +239,77 @@ def clean_html(html):
         if found:
             main_content = found
             break
-    
+
     if not main_content:
         # Try to find the largest content block
-        content_divs = soup.find_all('div')
+        content_divs = soup.find_all("div")
         if content_divs:
             # Find div with most text content
-            main_content = max(content_divs, 
-                             key=lambda d: len(d.get_text(strip=True)) 
-                             if d.get_text(strip=True) else 0)
-    
+            main_content = max(
+                content_divs,
+                key=lambda d: (
+                    len(d.get_text(strip=True)) if d.get_text(strip=True) else 0
+                ),
+            )
+
     if not main_content:
         main_content = soup.find("body")
-    
+
     if not main_content:
         return ""
-    
+
     # Remove scripts and styles
-    for el in main_content.find_all(['script', 'style', 'noscript']):
+    for el in main_content.find_all(["script", "style", "noscript"]):
         el.decompose()
-    
+
     # Handle column-based layouts - extract content but remove column structure
     # This prevents pipe characters from appearing in the output
-    for el in main_content.find_all('div', class_=lambda x: x and any(
-        pattern in ' '.join(x).lower() for pattern in ['column', 'columns', 'col-', 'grid'])):
+    for el in main_content.find_all(
+        "div",
+        class_=lambda x: x
+        and any(
+            pattern in " ".join(x).lower()
+            for pattern in ["column", "columns", "col-", "grid"]
+        ),
+    ):
         # Replace the div with its contents, effectively removing the column wrapper
         el.unwrap()
-    
+
     # Remove table elements that might create pipe characters
-    for el in main_content.find_all(['table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td']):
+    for el in main_content.find_all(
+        ["table", "thead", "tbody", "tfoot", "tr", "th", "td"]
+    ):
         # Extract text content and replace the table element with it
-        text = el.get_text(separator=' ', strip=True)
+        text = el.get_text(separator=" ", strip=True)
         if text:
             el.replace_with(soup.new_string(f" {text} "))
         else:
             el.decompose()
-    
+
     # Remove common header elements that might be inside main content
-    for tag in main_content.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']):
+    for tag in main_content.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
         text = tag.get_text(strip=True).lower()
         # Remove headers that are likely site-wide headers
-        if any(pattern in text for pattern in 
-               ['stony brook', 'university', 'navigation', 'menu', 'search',
-                'login', 'sign in', 'contact us', 'quick links']):
+        if any(
+            pattern in text
+            for pattern in [
+                "stony brook",
+                "university",
+                "navigation",
+                "menu",
+                "search",
+                "login",
+                "sign in",
+                "contact us",
+                "quick links",
+            ]
+        ):
             # But keep it if it's the main page title
-            if tag.name != 'h1' or len(main_content.find_all('h1')) > 1:
+            if tag.name != "h1" or len(main_content.find_all("h1")) > 1:
                 tag.decompose()
-    
+
     # Remove all hyperlinks but keep their text with proper spacing
-    for a in main_content.find_all('a'):
+    for a in main_content.find_all("a"):
         # Get the text content
         text = a.get_text()
         # Add spaces around the text to prevent content from sticking together
@@ -235,51 +320,65 @@ def clean_html(html):
             a.replace_with(new_text)
         else:
             a.decompose()
-    
+
     # Also remove any href attributes that might remain on other elements
     for tag in main_content.find_all(True):
-        if 'href' in tag.attrs:
-            del tag.attrs['href']
-    
+        if "href" in tag.attrs:
+            del tag.attrs["href"]
+
     # Convert to markdown with ATX-style headers
-    markdown = md(str(main_content), heading_style="ATX", strip=['a'])
-    
+    markdown = md(str(main_content), heading_style="ATX", strip=["a"])
+
     # Additional cleanup to ensure no markdown links remain
     # Remove any [text](url) patterns that might have been created
-    markdown = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', markdown)
-    
+    markdown = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", markdown)
+
     # Clean up excessive whitespace while preserving paragraph structure
     # Replace multiple spaces with single space
-    markdown = re.sub(r'[ \t]+', ' ', markdown)
+    markdown = re.sub(r"[ \t]+", " ", markdown)
     # Replace more than 2 consecutive newlines with 2
-    markdown = re.sub(r'\n{3,}', '\n\n', markdown)
+    markdown = re.sub(r"\n{3,}", "\n\n", markdown)
     # Clean up spaces at the beginning and end of lines
     markdown = "\n".join(line.strip() for line in markdown.split("\n"))
 
     # Post-process to remove common header/footer text patterns
     filtered_lines = []
     skip_patterns = [
-        'skip to main content', 'skip to content', 'skip navigation',
-        'breadcrumb', 'you are here', 'home >', 'back to top',
-        'share this page', 'print this page', 'last modified',
-        'copyright', '©', 'all rights reserved', 'privacy policy',
-        'terms of use', 'accessibility', 'contact us'
+        "skip to main content",
+        "skip to content",
+        "skip navigation",
+        "breadcrumb",
+        "you are here",
+        "home >",
+        "back to top",
+        "share this page",
+        "print this page",
+        "last modified",
+        "copyright",
+        "©",
+        "all rights reserved",
+        "privacy policy",
+        "terms of use",
+        "accessibility",
+        "contact us",
     ]
-    
+
     for line in lines:
         line_lower = line.strip().lower()
         # Skip lines that are likely header/footer content
         if not any(pattern in line_lower for pattern in skip_patterns):
             # Also skip lines that are just pipe characters or table remnants
-            if line.strip() not in ['|', '||', '|||', '||||', '|||||', '||||||']:
+            if line.strip() not in ["|", "||", "|||", "||||", "|||||", "||||||"]:
                 filtered_lines.append(line)
-    
-    markdown = '\n'.join(filtered_lines)
-    
+
+    markdown = "\n".join(filtered_lines)
+
     # Final cleanup: remove any remaining isolated pipe characters
-    markdown = re.sub(r'\s*\|\s*\|\s*', ' ', markdown)  # Replace || with space
-    markdown = re.sub(r'^\s*\|\s*$', '', markdown, flags=re.MULTILINE)  # Remove lines with just |
-    markdown = re.sub(r'\s*\|\s*', ' ', markdown)  # Replace single | with space
+    markdown = re.sub(r"\s*\|\s*\|\s*", " ", markdown)  # Replace || with space
+    markdown = re.sub(
+        r"^\s*\|\s*$", "", markdown, flags=re.MULTILINE
+    )  # Remove lines with just |
+    markdown = re.sub(r"\s*\|\s*", " ", markdown)  # Replace single | with space
 
     return markdown.strip()
 
@@ -287,12 +386,12 @@ def clean_html(html):
 def save_queue_to_file():
     """Save current queue state to file"""
     global last_queue_save
-    
+
     with queue_lock:
         # Get all items from queue without removing them
         temp_items = []
         queue_items = []
-        
+
         # Temporarily drain the queue to get all items
         while not url_queue.empty():
             try:
@@ -301,17 +400,17 @@ def save_queue_to_file():
                 queue_items.append(item)
             except Empty:
                 break
-        
+
         # Put all items back
         for item in temp_items:
             url_queue.put(item)
-        
+
         # Save to file
         with file_lock:
             with open(QUEUE_FILE, "w", encoding="utf-8") as f:
                 for item in queue_items:
                     f.write(item + "\n")
-        
+
         last_queue_save = time.time()
         print(f"💾 Queue saved: {len(queue_items)} URLs")
 
@@ -326,7 +425,7 @@ def worker_thread(thread_id):
 
     consecutive_empty_checks = 0
     max_empty_checks = 3  # Allow 3 consecutive empty checks before giving up
-    
+
     try:
         while not stop_crawl.is_set():
             try:
@@ -335,18 +434,28 @@ def worker_thread(thread_id):
                 consecutive_empty_checks = 0  # Reset counter when we get work
             except Empty:
                 consecutive_empty_checks += 1
-                print(f"[Thread {thread_id}] No work available (check {consecutive_empty_checks}/{max_empty_checks})")
-                
+                print(
+                    f"[Thread {thread_id}] No work available (check {consecutive_empty_checks}/{max_empty_checks})"
+                )
+
                 # Check if queue is truly empty and no other threads are working
                 if url_queue.empty() and consecutive_empty_checks >= max_empty_checks:
                     with active_threads_lock:
-                        remaining_threads = active_threads - 1  # Don't count this thread
-                    
-                    if remaining_threads <= 1:  # Only this thread or one other thread left
-                        print(f"[Thread {thread_id}] Queue empty and few threads remaining. Exiting.")
+                        remaining_threads = (
+                            active_threads - 1
+                        )  # Don't count this thread
+
+                    if (
+                        remaining_threads <= 1
+                    ):  # Only this thread or one other thread left
+                        print(
+                            f"[Thread {thread_id}] Queue empty and few threads remaining. Exiting."
+                        )
                         break
                     else:
-                        print(f"[Thread {thread_id}] Waiting for other threads... ({remaining_threads} still active)")
+                        print(
+                            f"[Thread {thread_id}] Waiting for other threads... ({remaining_threads} still active)"
+                        )
                         consecutive_empty_checks = 0  # Reset and keep waiting
                         continue
                 else:
@@ -368,7 +477,9 @@ def worker_thread(thread_id):
             # Check page limit
             with pages_crawled_lock:
                 if MAX_PAGES is not None and pages_crawled >= MAX_PAGES:
-                    print(f"🛑 Reached maximum page limit ({MAX_PAGES}). Stopping crawl.")
+                    print(
+                        f"🛑 Reached maximum page limit ({MAX_PAGES}). Stopping crawl."
+                    )
                     stop_crawl.set()
                     url_queue.task_done()
                     break
@@ -377,12 +488,15 @@ def worker_thread(thread_id):
 
             # robots.txt check before crawling
             if rp is not None and not rp.can_fetch(USER_AGENT, url_no_fragment):
-                print(f"[Thread {thread_id}] 🚫 Blocked by robots.txt: {url_no_fragment}")
+                print(
+                    f"[Thread {thread_id}] 🚫 Blocked by robots.txt: {url_no_fragment}"
+                )
                 url_queue.task_done()
                 continue
 
             print(
-                f"[Thread {thread_id}] 🔍 Crawling ({current_count}/{MAX_PAGES}) [depth={current_depth}]: {url_no_fragment}")
+                f"[Thread {thread_id}] 🔍 Crawling ({current_count}/{MAX_PAGES}) [depth={current_depth}]: {url_no_fragment}"
+            )
 
             # Save to visited log
             with file_lock:
@@ -417,8 +531,9 @@ def worker_thread(thread_id):
                 if looks_like_trap(href_no_fragment):
                     continue
 
-                if (parsed.netloc == ALLOWED_DOMAIN and
-                        href_no_fragment.startswith(ALLOWED_URL_PREFIX)):
+                if parsed.netloc == ALLOWED_DOMAIN and href_no_fragment.startswith(
+                    ALLOWED_URL_PREFIX
+                ):
 
                     # Check if URL is new
                     with visited_lock:
@@ -435,7 +550,9 @@ def worker_thread(thread_id):
                         if new_url not in depth_map:
                             depth_map[new_url] = current_depth + 1
             else:
-                print(f"[Thread {thread_id}] 🛑 Max depth {MAX_DEPTH} reached, not enqueueing {len(new_urls)} links")
+                print(
+                    f"[Thread {thread_id}] 🛑 Max depth {MAX_DEPTH} reached, not enqueueing {len(new_urls)} links"
+                )
 
             # Periodically save queue
             if time.time() - last_queue_save > QUEUE_SAVE_INTERVAL:
@@ -445,7 +562,9 @@ def worker_thread(thread_id):
                 # Clean and extract main content
                 markdown = clean_html(html)
                 if not markdown or len(markdown) < 50:
-                    print(f"[Thread {thread_id}] ⚠️  Not enough main content found at {url}, skipping.")
+                    print(
+                        f"[Thread {thread_id}] ⚠️  Not enough main content found at {url}, skipping."
+                    )
                     url_queue.task_done()
                     continue
 
@@ -479,7 +598,9 @@ def worker_thread(thread_id):
         # Mark this thread as no longer active
         with active_threads_lock:
             active_threads -= 1
-        print(f"[Thread {thread_id}] Shutting down. Active threads remaining: {active_threads}")
+        print(
+            f"[Thread {thread_id}] Shutting down. Active threads remaining: {active_threads}"
+        )
 
 
 def signal_handler(sig, frame):
@@ -531,7 +652,11 @@ if not queue_loaded:
 # initial_urls.extend(sitemap_urls)
 
 # Remove any skipped extensions and traps
-initial_urls = [url for url in initial_urls if not any(ext in url.lower() for ext in SKIP_EXTENSIONS)]
+initial_urls = [
+    url
+    for url in initial_urls
+    if not any(ext in url.lower() for ext in SKIP_EXTENSIONS)
+]
 initial_urls = [url for url in initial_urls if not looks_like_trap(url)]
 
 # Add initial URLs to queue
@@ -549,7 +674,7 @@ elif url_queue.empty() and not queue_loaded:
 
 print(f"🚀 Starting crawl with {NUM_THREADS} threads...")
 print(f"📊 Maximum pages to crawl: {MAX_PAGES}")
-print(f"📊 Already crawled: {len(visited)} pages") 
+print(f"📊 Already crawled: {len(visited)} pages")
 print(f"📁 Initial queue size: {url_queue.qsize()}")
 print(f"💾 Queue will be saved every {QUEUE_SAVE_INTERVAL} seconds")
 print(f"⏱️  Threads will timeout after {THREAD_TIMEOUT} seconds of no work")
@@ -567,14 +692,16 @@ try:
     # Wait for all threads to complete or stop signal
     for t in threads:
         t.join()
-    
+
     # Wait for queue to be empty (with timeout)
     try:
         url_queue.join()
     except KeyboardInterrupt:
-        print("\n🛑 Crawl interrupted by user during queue processing. Shutting down...\n")
+        print(
+            "\n🛑 Crawl interrupted by user during queue processing. Shutting down...\n"
+        )
         stop_crawl.set()
-    
+
 except KeyboardInterrupt:
     print("\n🛑 Crawl interrupted by user. Shutting down...\n")
     stop_crawl.set()
@@ -587,7 +714,7 @@ finally:
             remaining_urls.append(url_queue.get_nowait())
         except Empty:
             break
-    
+
     with open(QUEUE_FILE, "w", encoding="utf-8") as f:
         f.writelines(item + "\n" for item in remaining_urls)
 
