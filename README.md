@@ -62,8 +62,6 @@ ruff check .
 
 The crawler tests run end to end against a local HTTP server; no network access is needed.
 
-`tutorial/` contains background notes and notebooks on BeautifulSoup and on threading with queues.
-
 ## Responsible use
 
 Only crawl sites you are permitted to crawl, keep `delay` generous, and respect each site's terms of use.
@@ -71,3 +69,5 @@ Only crawl sites you are permitted to crawl, keep `delay` generous, and respect 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+<br>
