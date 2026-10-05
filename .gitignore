@@ -1,9 +1,13 @@
+# Site-specific configs and code stay local; only the example is published
+sites/*
+!sites/example.toml
+private/
+output/
+
 queue.txt
 visited.txt
-bmi_stonybrook_markdown/
 output_markdown/
 cleaned_markdown/
-stonybrook_content/
 scrape_forecast.txt
 scraper_env/
 openwebui_rag_docs/
